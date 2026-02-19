@@ -12,15 +12,17 @@ class SettingsWindowController: NSWindowController {
   private var imageOpacitySlider: NSSlider!
   private var imageOpacityLabel: NSTextField!
   private var launchAtLoginCheckbox: NSButton!
+  private var languagePopup: NSPopUpButton!
+  private var stackView: NSStackView!
 
   convenience init() {
     let window = NSWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 420, height: 370),
+      contentRect: NSRect(x: 0, y: 0, width: 420, height: 420),
       styleMask: [.titled, .closable],
       backing: .buffered,
       defer: true
     )
-    window.title = "設定"
+    window.title = L10n.settings
     window.center()
     window.isReleasedWhenClosed = false
     self.init(window: window)
@@ -30,7 +32,10 @@ class SettingsWindowController: NSWindowController {
   private func setupUI() {
     guard let contentView = window?.contentView else { return }
 
-    let stackView = NSStackView()
+    // 既存のstackViewがあれば除去
+    stackView?.removeFromSuperview()
+
+    stackView = NSStackView()
     stackView.orientation = .vertical
     stackView.alignment = .leading
     stackView.spacing = 16
@@ -45,9 +50,38 @@ class SettingsWindowController: NSWindowController {
       stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
     ])
 
+    // 言語
+    let langRow = makeRow()
+    let langTitle = NSTextField(labelWithString: L10n.language)
+    langTitle.font = .systemFont(ofSize: 13)
+    langTitle.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+
+    languagePopup = NSPopUpButton(frame: .zero, pullsDown: false)
+    for lang in Language.allCases {
+      languagePopup.addItem(withTitle: lang.displayName)
+      languagePopup.lastItem?.representedObject = lang.rawValue
+    }
+    // 現在の言語を選択
+    let currentLang = Language(rawValue: settings.language) ?? .ja
+    if let index = Language.allCases.firstIndex(of: currentLang) {
+      languagePopup.selectItem(at: index)
+    }
+    languagePopup.target = self
+    languagePopup.action = #selector(languageChanged)
+
+    langRow.addArrangedSubview(langTitle)
+    langRow.addArrangedSubview(languagePopup)
+    stackView.addArrangedSubview(langRow)
+
+    // 区切り線（言語の後）
+    let langSeparator = NSBox()
+    langSeparator.boxType = .separator
+    stackView.addArrangedSubview(langSeparator)
+    langSeparator.widthAnchor.constraint(equalTo: stackView.widthAnchor, constant: -40).isActive = true
+
     // アイコンサイズ
     let iconRow = makeRow()
-    let iconTitle = NSTextField(labelWithString: "アイコンサイズ:")
+    let iconTitle = NSTextField(labelWithString: L10n.iconSize)
     iconTitle.font = .systemFont(ofSize: 13)
     iconTitle.setContentHuggingPriority(.defaultHigh, for: .horizontal)
 
@@ -65,7 +99,7 @@ class SettingsWindowController: NSWindowController {
 
     // 背景色
     let colorRow = makeRow()
-    let colorTitle = NSTextField(labelWithString: "背景色:")
+    let colorTitle = NSTextField(labelWithString: L10n.backgroundColor)
     colorTitle.font = .systemFont(ofSize: 13)
     colorTitle.setContentHuggingPriority(.defaultHigh, for: .horizontal)
 
@@ -82,7 +116,7 @@ class SettingsWindowController: NSWindowController {
 
     // 背景透過
     let opacityRow = makeRow()
-    let opacityTitle = NSTextField(labelWithString: "背景の透過:")
+    let opacityTitle = NSTextField(labelWithString: L10n.backgroundOpacity)
     opacityTitle.font = .systemFont(ofSize: 13)
     opacityTitle.setContentHuggingPriority(.defaultHigh, for: .horizontal)
 
@@ -100,14 +134,14 @@ class SettingsWindowController: NSWindowController {
 
     // 背景画像
     let imageRow = makeRow()
-    let imageTitle = NSTextField(labelWithString: "背景画像:")
+    let imageTitle = NSTextField(labelWithString: L10n.backgroundImage)
     imageTitle.font = .systemFont(ofSize: 13)
     imageTitle.setContentHuggingPriority(.defaultHigh, for: .horizontal)
 
-    let selectButton = NSButton(title: "選択...", target: self, action: #selector(selectBackgroundImage))
+    let selectButton = NSButton(title: L10n.selectImage, target: self, action: #selector(selectBackgroundImage))
     selectButton.bezelStyle = .push
 
-    let clearButton = NSButton(title: "クリア", target: self, action: #selector(clearBackgroundImage))
+    let clearButton = NSButton(title: L10n.clearImage, target: self, action: #selector(clearBackgroundImage))
     clearButton.bezelStyle = .push
 
     imageRow.addArrangedSubview(imageTitle)
@@ -124,7 +158,7 @@ class SettingsWindowController: NSWindowController {
 
     // 背景画像の透過
     let imageOpacityRow = makeRow()
-    let imageOpacityTitle = NSTextField(labelWithString: "画像の透過:")
+    let imageOpacityTitle = NSTextField(labelWithString: L10n.imageOpacity)
     imageOpacityTitle.font = .systemFont(ofSize: 13)
     imageOpacityTitle.setContentHuggingPriority(.defaultHigh, for: .horizontal)
 
@@ -147,7 +181,7 @@ class SettingsWindowController: NSWindowController {
     separator.widthAnchor.constraint(equalTo: stackView.widthAnchor, constant: -40).isActive = true
 
     // ログイン時に自動起動
-    launchAtLoginCheckbox = NSButton(checkboxWithTitle: "Mac起動時に自動で起動する", target: self, action: #selector(launchAtLoginChanged))
+    launchAtLoginCheckbox = NSButton(checkboxWithTitle: L10n.launchAtLogin, target: self, action: #selector(launchAtLoginChanged))
     launchAtLoginCheckbox.state = LaunchAtLogin.isEnabled ? .on : .off
     stackView.addArrangedSubview(launchAtLoginCheckbox)
   }
@@ -158,6 +192,15 @@ class SettingsWindowController: NSWindowController {
     row.alignment = .centerY
     row.spacing = 8
     return row
+  }
+
+  @objc private func languageChanged() {
+    guard let rawValue = languagePopup.selectedItem?.representedObject as? String else { return }
+    settings.language = rawValue
+
+    // UIを再構築して即座に反映
+    window?.title = L10n.settings
+    setupUI()
   }
 
   @objc private func iconSizeChanged() {
@@ -185,13 +228,12 @@ class SettingsWindowController: NSWindowController {
   @objc private func launchAtLoginChanged() {
     let enabled = launchAtLoginCheckbox.state == .on
     LaunchAtLogin.setEnabled(enabled)
-    // 実際の状態を反映（権限不足等で変更できなかった場合）
     launchAtLoginCheckbox.state = LaunchAtLogin.isEnabled ? .on : .off
   }
 
   @objc private func selectBackgroundImage() {
     let panel = NSOpenPanel()
-    panel.title = "背景画像を選択"
+    panel.title = L10n.selectImageTitle
     panel.allowedContentTypes = [.image]
     panel.allowsMultipleSelection = false
     panel.canChooseDirectories = false
@@ -209,11 +251,12 @@ class SettingsWindowController: NSWindowController {
 
   private func currentImageName() -> String {
     let path = settings.backgroundImagePath
-    if path.isEmpty { return "未設定" }
+    if path.isEmpty { return L10n.noImage }
     return (path as NSString).lastPathComponent
   }
 
   func showWindow() {
+    window?.title = L10n.settings
     window?.center()
     window?.makeKeyAndOrderFront(nil)
     NSApp.activate(ignoringOtherApps: true)

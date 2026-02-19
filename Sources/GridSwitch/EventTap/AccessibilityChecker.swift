@@ -22,9 +22,8 @@ enum AccessibilityChecker {
     let granted = requestAccessibility()
     if !granted {
       let alert = NSAlert()
-      alert.messageText = "アクセシビリティ権限が必要です"
-      alert.informativeText =
-        "システム設定 > プライバシーとセキュリティ > アクセシビリティ で GridSwitch を許可してください。\n許可後、アプリを再起動してください。"
+      alert.messageText = L10n.accessibilityRequired
+      alert.informativeText = L10n.accessibilityMessage
       alert.alertStyle = .warning
       alert.addButton(withTitle: "OK")
       alert.runModal()

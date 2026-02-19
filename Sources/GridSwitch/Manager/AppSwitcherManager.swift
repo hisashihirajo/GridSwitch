@@ -57,6 +57,14 @@ class AppSwitcherManager {
       self?.appProvider.refreshApps()
     }
 
+    // アプリのアクティベーション通知でMRUを常時追跡
+    NSWorkspace.shared.notificationCenter.addObserver(
+      self,
+      selector: #selector(appDidActivate(_:)),
+      name: NSWorkspace.didActivateApplicationNotification,
+      object: nil
+    )
+
     // CGEventTap開始
     let started = eventHandler.start()
     if !started {
@@ -72,11 +80,24 @@ class AppSwitcherManager {
   func stop() {
     eventHandler.stop()
     panel.dismiss()
+    NSWorkspace.shared.notificationCenter.removeObserver(self)
+  }
+
+  // アプリがアクティブになるたびにMRU先頭に記録
+  @objc private func appDidActivate(_ notification: Notification) {
+    guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+      let bundleId = app.bundleIdentifier
+    else { return }
+
+    var order = Settings.shared.appMruOrder
+    order.removeAll { $0 == bundleId }
+    order.insert(bundleId, at: 0)
+    Settings.shared.appMruOrder = order
   }
 
   private func showSwitcher() {
     appProvider.refreshApps()
-    let apps = appProvider.appsWithActiveFirst()
+    let apps = appProvider.appsWithMruOrder()
     panel.showWithApps(apps)
   }
 
@@ -89,6 +110,7 @@ class AppSwitcherManager {
     panel.dismiss()
 
     // 選択されたアプリをアクティブにする
+    // （MRU更新はappDidActivate通知で自動的に行われる）
     let runningApps = NSWorkspace.shared.runningApplications
     if let app = runningApps.first(where: { $0.processIdentifier == appInfo.pid }) {
       app.activate()

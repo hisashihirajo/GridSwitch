@@ -12,10 +12,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     NSLog("[GridSwitch] メニューバーアイコン設定完了")
     switcherManager.start()
     NSLog("[GridSwitch] 起動完了")
+
+    // 言語変更時にメニューを再構築
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(settingsDidChange),
+      name: Settings.changedNotification,
+      object: nil
+    )
   }
 
   func applicationWillTerminate(_ notification: Notification) {
     switcherManager.stop()
+  }
+
+  @objc private func settingsDidChange() {
+    rebuildMenu()
   }
 
   private func setupMenuBarIcon() {
@@ -28,17 +40,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       )
     }
 
+    rebuildMenu()
+  }
+
+  private func rebuildMenu() {
     let menu = NSMenu()
     menu.addItem(
       NSMenuItem(
-        title: "GridSwitch について",
+        title: L10n.about,
         action: #selector(showAbout),
         keyEquivalent: ""
       )
     )
     menu.addItem(
       NSMenuItem(
-        title: "設定...",
+        title: L10n.settingsMenu,
         action: #selector(showSettings),
         keyEquivalent: ","
       )
@@ -46,7 +62,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     menu.addItem(NSMenuItem.separator())
     menu.addItem(
       NSMenuItem(
-        title: "終了",
+        title: L10n.quit,
         action: #selector(quit),
         keyEquivalent: "q"
       )
@@ -58,7 +74,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   @objc private func showAbout() {
     let alert = NSAlert()
     alert.messageText = "GridSwitch"
-    alert.informativeText = "グリッド型アプリケーションスイッチャー v1.0"
+    alert.informativeText = L10n.aboutDescription
     alert.alertStyle = .informational
     alert.runModal()
   }

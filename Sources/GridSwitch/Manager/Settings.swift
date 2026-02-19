@@ -15,6 +15,8 @@ class Settings {
     case backgroundOpacity
     case backgroundImagePath
     case backgroundImageOpacity
+    case language
+    case appMruOrder
   }
 
   private init() {
@@ -29,6 +31,7 @@ class Settings {
       Key.backgroundColorB.rawValue: 0.0,
       Key.backgroundOpacity.rawValue: 0.85,
       Key.backgroundImageOpacity.rawValue: 1.0,
+      Key.language.rawValue: "ja",
     ])
   }
 
@@ -94,6 +97,23 @@ class Settings {
     let path = backgroundImagePath
     guard !path.isEmpty else { return nil }
     return NSImage(contentsOfFile: path)
+  }
+
+  // 言語
+  var language: String {
+    get { defaults.string(forKey: Key.language.rawValue) ?? "ja" }
+    set {
+      defaults.set(newValue, forKey: Key.language.rawValue)
+      notifyChanged()
+    }
+  }
+
+  // MRU順序（bundleIdentifierの配列、最近使った順）
+  var appMruOrder: [String] {
+    get { defaults.stringArray(forKey: Key.appMruOrder.rawValue) ?? [] }
+    set {
+      defaults.set(newValue, forKey: Key.appMruOrder.rawValue)
+    }
   }
 
   // セルサイズ（アイコンサイズに連動）

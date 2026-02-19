@@ -35,6 +35,35 @@ class RunningAppProvider {
     return sorted
   }
 
+  // MRU順（最近使った順）でアプリリストを返す
+  func appsWithMruOrder() -> [AppInfo] {
+    let mruOrder = Settings.shared.appMruOrder
+    let activeApp = NSWorkspace.shared.frontmostApplication
+
+    var ordered: [AppInfo] = []
+    var remaining = apps
+
+    // MRU順に並べる
+    for bundleId in mruOrder {
+      if let index = remaining.firstIndex(where: { $0.bundleIdentifier == bundleId }) {
+        ordered.append(remaining.remove(at: index))
+      }
+    }
+
+    // MRUに含まれない新規アプリはアルファベット順で末尾に追加
+    ordered.append(contentsOf: remaining)
+
+    // アクティブアプリを先頭に
+    if let activePid = activeApp?.processIdentifier,
+      let index = ordered.firstIndex(where: { $0.pid == activePid })
+    {
+      let active = ordered.remove(at: index)
+      ordered.insert(active, at: 0)
+    }
+
+    return ordered
+  }
+
   private func setupObservers() {
     let nc = NSWorkspace.shared.notificationCenter
 
