@@ -5,6 +5,8 @@ class SettingsWindowController: NSWindowController {
   private let settings = Settings.shared
   private var iconSizeSlider: NSSlider!
   private var iconSizeLabel: NSTextField!
+  private var maxColumnsSlider: NSSlider!
+  private var maxColumnsLabel: NSTextField!
   private var colorWell: NSColorWell!
   private var opacitySlider: NSSlider!
   private var opacityLabel: NSTextField!
@@ -19,7 +21,7 @@ class SettingsWindowController: NSWindowController {
 
   convenience init() {
     let window = NSWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 420, height: 460),
+      contentRect: NSRect(x: 0, y: 0, width: 420, height: 540),
       styleMask: [.titled, .closable],
       backing: .buffered,
       defer: true
@@ -34,8 +36,27 @@ class SettingsWindowController: NSWindowController {
   private func setupUI() {
     guard let contentView = window?.contentView else { return }
 
-    // 既存のstackViewがあれば除去
-    stackView?.removeFromSuperview()
+    // 既存のサブビューを除去
+    contentView.subviews.forEach { $0.removeFromSuperview() }
+
+    // ScrollViewで囲む
+    let scrollView = NSScrollView()
+    scrollView.translatesAutoresizingMaskIntoConstraints = false
+    scrollView.hasVerticalScroller = true
+    scrollView.drawsBackground = false
+    scrollView.borderType = .noBorder
+    contentView.addSubview(scrollView)
+
+    NSLayoutConstraint.activate([
+      scrollView.topAnchor.constraint(equalTo: contentView.topAnchor),
+      scrollView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+      scrollView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+      scrollView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+    ])
+
+    let documentView = NSView()
+    documentView.translatesAutoresizingMaskIntoConstraints = false
+    scrollView.documentView = documentView
 
     stackView = NSStackView()
     stackView.orientation = .vertical
@@ -43,13 +64,14 @@ class SettingsWindowController: NSWindowController {
     stackView.spacing = 16
     stackView.edgeInsets = NSEdgeInsets(top: 20, left: 20, bottom: 20, right: 20)
     stackView.translatesAutoresizingMaskIntoConstraints = false
-    contentView.addSubview(stackView)
+    documentView.addSubview(stackView)
 
     NSLayoutConstraint.activate([
-      stackView.topAnchor.constraint(equalTo: contentView.topAnchor),
-      stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-      stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-      stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+      stackView.topAnchor.constraint(equalTo: documentView.topAnchor),
+      stackView.leadingAnchor.constraint(equalTo: documentView.leadingAnchor),
+      stackView.trailingAnchor.constraint(equalTo: documentView.trailingAnchor),
+      stackView.bottomAnchor.constraint(equalTo: documentView.bottomAnchor),
+      stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
     ])
 
     // 言語
@@ -98,6 +120,26 @@ class SettingsWindowController: NSWindowController {
     iconRow.addArrangedSubview(iconSizeSlider)
     iconRow.addArrangedSubview(iconSizeLabel)
     stackView.addArrangedSubview(iconRow)
+
+    // 1行あたりの最大列数
+    let maxColRow = makeRow()
+    let maxColTitle = NSTextField(labelWithString: L10n.maxColumns)
+    maxColTitle.font = .systemFont(ofSize: 13)
+    maxColTitle.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+
+    maxColumnsSlider = NSSlider(value: Double(settings.maxColumns), minValue: 4, maxValue: 12, target: self, action: #selector(maxColumnsChanged))
+    maxColumnsSlider.numberOfTickMarks = 9
+    maxColumnsSlider.allowsTickMarkValuesOnly = true
+    maxColumnsSlider.widthAnchor.constraint(equalToConstant: 150).isActive = true
+
+    maxColumnsLabel = NSTextField(labelWithString: "\(settings.maxColumns)")
+    maxColumnsLabel.font = .monospacedDigitSystemFont(ofSize: 13, weight: .regular)
+    maxColumnsLabel.widthAnchor.constraint(equalToConstant: 50).isActive = true
+
+    maxColRow.addArrangedSubview(maxColTitle)
+    maxColRow.addArrangedSubview(maxColumnsSlider)
+    maxColRow.addArrangedSubview(maxColumnsLabel)
+    stackView.addArrangedSubview(maxColRow)
 
     // 背景色
     let colorRow = makeRow()
@@ -227,6 +269,12 @@ class SettingsWindowController: NSWindowController {
     let value = CGFloat(Int(iconSizeSlider.doubleValue))
     iconSizeLabel.stringValue = "\(Int(value))px"
     settings.iconSize = value
+  }
+
+  @objc private func maxColumnsChanged() {
+    let value = Int(maxColumnsSlider.doubleValue)
+    maxColumnsLabel.stringValue = "\(value)"
+    settings.maxColumns = value
   }
 
   @objc private func backgroundColorChanged() {

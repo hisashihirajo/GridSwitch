@@ -11,8 +11,8 @@ enum SwitcherAppearance {
   static let interItemSpacing: CGFloat = 8
   // セクション余白
   static let sectionInset: CGFloat = 20
-  // グリッド最大列数
-  static let maxColumns = 8
+  // グリッド最大列数（設定から取得）
+  static var maxColumns: Int { Settings.shared.maxColumns }
   // パネル角丸
   static let panelCornerRadius: CGFloat = 16
   // ラベルフォントサイズ
@@ -23,14 +23,9 @@ enum SwitcherAppearance {
   static let highlightBorderColor = NSColor.controlAccentColor
   static let highlightBorderWidth: CGFloat = 2
 
-  // グリッド列数を動的計算
+  // グリッド列数（設定値を使用、アプリ数が少ない場合はその数に合わせる）
   static func columns(for itemCount: Int) -> Int {
-    if itemCount <= 4 { return itemCount }
-    if itemCount <= 8 { return 4 }
-    if itemCount <= 12 { return 4 }
-    if itemCount <= 16 { return 4 }
-    let cols = Int(ceil(sqrt(Double(itemCount))))
-    return min(cols, maxColumns)
+    return min(itemCount, maxColumns)
   }
 
   // パネルサイズを計算

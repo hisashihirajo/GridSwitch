@@ -23,6 +23,7 @@ enum L10n {
   // 設定画面
   static var settings: String { current == .ja ? "設定" : "Settings" }
   static var iconSize: String { current == .ja ? "アイコンサイズ:" : "Icon Size:" }
+  static var maxColumns: String { current == .ja ? "1行の最大数:" : "Max per Row:" }
   static var backgroundColor: String { current == .ja ? "背景色:" : "Background:" }
   static var backgroundOpacity: String { current == .ja ? "背景の透過:" : "BG Opacity:" }
   static var backgroundImage: String { current == .ja ? "背景画像:" : "BG Image:" }

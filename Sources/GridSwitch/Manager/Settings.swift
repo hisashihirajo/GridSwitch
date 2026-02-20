@@ -18,6 +18,7 @@ class Settings {
     case language
     case appMruOrder
     case hiddenApps
+    case maxColumns
   }
 
   private init() {
@@ -33,6 +34,7 @@ class Settings {
       Key.backgroundOpacity.rawValue: 0.85,
       Key.backgroundImageOpacity.rawValue: 1.0,
       Key.language.rawValue: "ja",
+      Key.maxColumns.rawValue: 8,
     ])
   }
 
@@ -123,6 +125,15 @@ class Settings {
     get { defaults.stringArray(forKey: Key.appMruOrder.rawValue) ?? [] }
     set {
       defaults.set(newValue, forKey: Key.appMruOrder.rawValue)
+    }
+  }
+
+  // 1行あたりの最大列数（4〜12）
+  var maxColumns: Int {
+    get { defaults.integer(forKey: Key.maxColumns.rawValue) }
+    set {
+      defaults.set(min(max(newValue, 4), 12), forKey: Key.maxColumns.rawValue)
+      notifyChanged()
     }
   }
 
