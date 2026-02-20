@@ -143,6 +143,23 @@ class SwitcherPanel: NSPanel {
     return gridViewController.selectedApp()
   }
 
+  // 選択中のアプリをグリッドから除去してパネルを更新
+  func removeSelectedApp() {
+    let remainingApps = gridViewController.removeSelectedApp()
+    if remainingApps.isEmpty {
+      dismiss()
+      return
+    }
+    // パネルサイズを再計算
+    let panelSize = SwitcherAppearance.panelSize(for: remainingApps.count)
+    let frame = centeredFrame(size: panelSize)
+    setFrame(frame, display: true)
+    effectView.frame = NSRect(origin: .zero, size: panelSize)
+    backgroundImageView.frame = effectView.bounds
+    backgroundOverlay.frame = effectView.bounds
+    gridViewController.view.frame = effectView.bounds
+  }
+
   // マウス移動時にセルのハイライトを追従
   private func handleMouseMoved(at point: NSPoint) {
     guard let contentView = self.contentView else { return }

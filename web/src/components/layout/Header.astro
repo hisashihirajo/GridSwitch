@@ -1,0 +1,105 @@
+---
+import { t, type Lang } from '../../data/i18n';
+
+interface Props { lang?: Lang; }
+const { lang = 'en' } = Astro.props;
+const s = t[lang];
+const homeHref = lang === 'ja' ? '/ja' : '/';
+const manualHref = lang === 'ja' ? '/ja/manual' : '/manual';
+---
+
+<header id="header" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+  <nav class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href={homeHref} class="flex items-center gap-3 group">
+      <img src="/app-icon.png" alt="GridSwitch" class="w-8 h-8 rounded-lg" />
+      <span class="text-lg font-semibold text-text-primary">GridSwitch</span>
+    </a>
+
+    <div class="hidden sm:flex items-center gap-8">
+      <a href="#features" class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.features}</a>
+      <a href="#download" class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.download}</a>
+      <a href="/blog" class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.blog}</a>
+      <a href={manualHref} class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.manual}</a>
+      <div class="relative" id="lang-switcher">
+        <button id="lang-btn" class="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors cursor-pointer" aria-label="Language">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.6 9h16.8M3.6 15h16.8" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3a14.1 14.1 0 0 1 4 9 14.1 14.1 0 0 1-4 9 14.1 14.1 0 0 1-4-9 14.1 14.1 0 0 1 4-9Z" />
+          </svg>
+          <span id="lang-current">{lang === 'ja' ? 'JA' : 'EN'}</span>
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div id="lang-dropdown" class="hidden absolute right-0 top-full mt-2 w-32 py-1 rounded-lg bg-bg-card border border-border shadow-xl">
+          <a href="/" class={`block px-4 py-2 text-sm hover:bg-bg-card-hover transition-colors ${lang === 'en' ? 'text-text-primary' : 'text-text-secondary'}`}>English</a>
+          <a href="/ja" class={`block px-4 py-2 text-sm hover:bg-bg-card-hover transition-colors ${lang === 'ja' ? 'text-text-primary' : 'text-text-secondary'}`}>日本語</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- モバイルメニューボタン -->
+    <button id="mobile-menu-btn" class="sm:hidden text-text-secondary hover:text-text-primary p-2" aria-label="Menu">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+  </nav>
+
+  <!-- モバイルメニュー -->
+  <div id="mobile-menu" class="sm:hidden hidden border-t border-border">
+    <div class="px-6 py-4 flex flex-col gap-4">
+      <a href="#features" class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.features}</a>
+      <a href="#download" class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.download}</a>
+      <a href="/blog" class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.blog}</a>
+      <a href={manualHref} class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.manual}</a>
+      <div class="flex items-center gap-3 pt-2 border-t border-border">
+        <a href="/" class={`text-sm ${lang === 'en' ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary transition-colors'}`}>English</a>
+        <span class="text-text-secondary">|</span>
+        <a href="/ja" class={`text-sm ${lang === 'ja' ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary transition-colors'}`}>日本語</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<script>
+  const header = document.getElementById('header')!;
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn')!;
+  const mobileMenu = document.getElementById('mobile-menu')!;
+
+  // スクロールでヘッダー背景を切り替え
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 50) {
+      header.classList.add('glass');
+    } else {
+      header.classList.remove('glass');
+    }
+  });
+
+  // モバイルメニュートグル
+  mobileMenuBtn.addEventListener('click', () => {
+    mobileMenu.classList.toggle('hidden');
+  });
+
+  // メニューリンククリックで閉じる
+  mobileMenu.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', () => {
+      mobileMenu.classList.add('hidden');
+    });
+  });
+
+  // 言語ドロップダウン
+  const langBtn = document.getElementById('lang-btn')!;
+  const langDropdown = document.getElementById('lang-dropdown')!;
+
+  langBtn.addEventListener('click', () => {
+    langDropdown.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!(e.target as Element).closest('#lang-switcher')) {
+      langDropdown.classList.add('hidden');
+    }
+  });
+</script>

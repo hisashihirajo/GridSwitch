@@ -1,0 +1,44 @@
+---
+import KeyboardKey from '../ui/KeyboardKey.astro';
+import { t, type Lang } from '../../data/i18n';
+
+interface Props { lang?: Lang; }
+const { lang = 'en' } = Astro.props;
+const s = t[lang];
+
+const steps = [
+  { number: '1', title: s.howStep1Title, description: s.howStep1Desc, keys: ['⌘', 'Tab'] },
+  { number: '2', title: s.howStep2Title, description: s.howStep2Desc, keys: ['←', '→', 'Q'] },
+  { number: '3', title: s.howStep3Title, description: s.howStep3Desc, keys: ['⌘', '↑'] },
+];
+---
+
+<section class="py-24 md:py-32 gradient-bg">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="text-center mb-16">
+      <h2 class="fade-in text-3xl md:text-5xl font-bold mb-4">
+        {s.howTitle}
+      </h2>
+      <p class="fade-in text-text-secondary text-lg">
+        {s.howSub}
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+      {steps.map((step) => (
+        <div class="fade-in text-center">
+          <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center">
+            <span class="text-2xl font-bold text-accent">{step.number}</span>
+          </div>
+          <h3 class="text-xl font-semibold mb-3">{step.title}</h3>
+          <p class="text-text-secondary text-sm leading-relaxed mb-4">{step.description}</p>
+          <div class="flex items-center justify-center gap-2">
+            {step.keys.map((key) => (
+              <KeyboardKey>{key}</KeyboardKey>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

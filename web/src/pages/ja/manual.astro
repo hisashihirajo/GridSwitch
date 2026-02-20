@@ -1,0 +1,270 @@
+---
+import '../../styles/global.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/layout/Header.astro';
+import Footer from '../../components/layout/Footer.astro';
+import KeyboardKey from '../../components/ui/KeyboardKey.astro';
+import { t } from '../../data/i18n';
+
+const s = t['ja'];
+---
+
+<BaseLayout title="マニュアル - GridSwitch" description="GridSwitchの使い方をすべて解説します。">
+  <Header lang="ja" />
+  <main class="pt-32 pb-24">
+    <div class="max-w-4xl mx-auto px-6">
+      <!-- タイトル -->
+      <div class="mb-16 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">{s.manualTitle}</h1>
+        <p class="text-lg text-text-secondary">{s.manualSub}</p>
+      </div>
+
+      <!-- 目次 -->
+      <nav class="mb-16 p-6 rounded-2xl bg-bg-card border border-border">
+        <h2 class="text-lg font-semibold mb-4">{s.manualToc}</h2>
+        <ol class="list-decimal list-inside space-y-2 text-text-secondary">
+          <li><a href="#install" class="text-accent hover:underline">{s.manualInstall}</a></li>
+          <li><a href="#basic" class="text-accent hover:underline">{s.manualBasic}</a></li>
+          <li><a href="#grid" class="text-accent hover:underline">{s.manualGrid}</a></li>
+          <li><a href="#numbers" class="text-accent hover:underline">{s.manualNumbers}</a></li>
+          <li><a href="#quit" class="text-accent hover:underline">{s.manualQuit}</a></li>
+          <li><a href="#settings" class="text-accent hover:underline">{s.manualSettings}</a></li>
+          <li><a href="#menubar" class="text-accent hover:underline">{s.manualMenuBar}</a></li>
+          <li><a href="#troubleshooting" class="text-accent hover:underline">{s.manualTroubleshooting}</a></li>
+        </ol>
+      </nav>
+
+      <!-- コンテンツ -->
+      <div class="space-y-20">
+
+        <!-- 1. インストール -->
+        <section id="install">
+          <h2 class="text-2xl font-bold mb-6 text-text-primary flex items-center gap-3">
+            <span class="flex items-center justify-center w-8 h-8 rounded-full bg-accent/20 text-accent text-sm font-bold">1</span>
+            {s.manualInstall}
+          </h2>
+          <div class="space-y-4 text-text-secondary leading-relaxed">
+            <p>{s.manualInstallDownload}</p>
+            <p class="text-sm px-4 py-3 rounded-lg bg-bg-card border border-border">{s.manualInstallReq}</p>
+
+            <h3 class="text-lg font-semibold text-text-primary mt-8 mb-3">{s.manualInstallAccessibility}</h3>
+            <p>{s.manualInstallAccessibilityDesc}</p>
+            <p class="mt-4 font-medium text-text-primary">{s.manualInstallAccessibilitySteps}</p>
+            <ol class="list-decimal list-inside space-y-2 ml-2">
+              <li>{s.manualInstallStep1}</li>
+              <li>{s.manualInstallStep2}</li>
+              <li>{s.manualInstallStep3}</li>
+            </ol>
+          </div>
+        </section>
+
+        <!-- 2. 基本操作 -->
+        <section id="basic">
+          <h2 class="text-2xl font-bold mb-6 text-text-primary flex items-center gap-3">
+            <span class="flex items-center justify-center w-8 h-8 rounded-full bg-accent/20 text-accent text-sm font-bold">2</span>
+            {s.manualBasic}
+          </h2>
+          <div class="space-y-4 text-text-secondary leading-relaxed">
+            <div class="flex items-start gap-4 p-4 rounded-xl bg-bg-card border border-border">
+              <div class="flex gap-1 shrink-0 mt-0.5">
+                <KeyboardKey>⌘</KeyboardKey> + <KeyboardKey>Tab</KeyboardKey>
+              </div>
+              <div>
+                <h3 class="font-semibold text-text-primary mb-1">{s.manualBasicOpen}</h3>
+                <p class="text-sm">{s.manualBasicOpenDesc}</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4 p-4 rounded-xl bg-bg-card border border-border">
+              <div class="flex gap-1 shrink-0 mt-0.5">
+                <KeyboardKey>⌘</KeyboardKey>
+              </div>
+              <div>
+                <h3 class="font-semibold text-text-primary mb-1">{s.manualBasicSwitch}</h3>
+                <p class="text-sm">{s.manualBasicSwitchDesc}</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4 p-4 rounded-xl bg-bg-card border border-border">
+              <div class="shrink-0 mt-0.5">
+                <KeyboardKey>Esc</KeyboardKey>
+              </div>
+              <div>
+                <h3 class="font-semibold text-text-primary mb-1">{s.manualBasicCancel}</h3>
+                <p class="text-sm">{s.manualBasicCancelDesc}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. グリッド操作 -->
+        <section id="grid">
+          <h2 class="text-2xl font-bold mb-6 text-text-primary flex items-center gap-3">
+            <span class="flex items-center justify-center w-8 h-8 rounded-full bg-accent/20 text-accent text-sm font-bold">3</span>
+            {s.manualGrid}
+          </h2>
+          <div class="space-y-4 text-text-secondary leading-relaxed">
+            <div class="grid gap-4">
+              <div class="flex items-start gap-4 p-4 rounded-xl bg-bg-card border border-border">
+                <div class="flex gap-1 shrink-0 mt-0.5">
+                  <KeyboardKey>↑</KeyboardKey> <KeyboardKey>↓</KeyboardKey> <KeyboardKey>←</KeyboardKey> <KeyboardKey>→</KeyboardKey>
+                </div>
+                <p>{s.manualGridArrows}</p>
+              </div>
+              <div class="flex items-start gap-4 p-4 rounded-xl bg-bg-card border border-border">
+                <div class="flex gap-1 shrink-0 mt-0.5">
+                  <KeyboardKey>Tab</KeyboardKey> / <KeyboardKey>⇧</KeyboardKey> + <KeyboardKey>Tab</KeyboardKey>
+                </div>
+                <p>{s.manualGridTab}</p>
+              </div>
+              <div class="flex items-start gap-4 p-4 rounded-xl bg-bg-card border border-border">
+                <div class="flex gap-1 shrink-0 mt-0.5">
+                  <KeyboardKey>⌘</KeyboardKey> + <KeyboardKey>Tab</KeyboardKey>
+                </div>
+                <p>{s.manualGridCmdTab}</p>
+              </div>
+              <div class="flex items-start gap-4 p-4 rounded-xl bg-bg-card border border-border">
+                <div class="flex gap-1 shrink-0 mt-0.5">
+                  <KeyboardKey>⌘</KeyboardKey> + <KeyboardKey>⇧</KeyboardKey> + <KeyboardKey>Tab</KeyboardKey>
+                </div>
+                <p>{s.manualGridCmdShiftTab}</p>
+              </div>
+              <div class="flex items-start gap-4 p-4 rounded-xl bg-bg-card border border-border">
+                <div class="shrink-0 mt-0.5">🖱️</div>
+                <p>{s.manualGridMouse}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. 数字キーショートカット -->
+        <section id="numbers">
+          <h2 class="text-2xl font-bold mb-6 text-text-primary flex items-center gap-3">
+            <span class="flex items-center justify-center w-8 h-8 rounded-full bg-accent/20 text-accent text-sm font-bold">4</span>
+            {s.manualNumbers}
+          </h2>
+          <div class="space-y-4 text-text-secondary leading-relaxed">
+            <p>{s.manualNumbersDesc}</p>
+            <div class="flex items-start gap-4 p-4 rounded-xl bg-bg-card border border-border">
+              <div class="flex gap-1 shrink-0 mt-0.5">
+                <KeyboardKey>1</KeyboardKey> – <KeyboardKey>9</KeyboardKey>
+              </div>
+              <p>{s.manualNumbers1to9}</p>
+            </div>
+            <div class="flex items-start gap-4 p-4 rounded-xl bg-bg-card border border-border">
+              <div class="shrink-0 mt-0.5">
+                <KeyboardKey>0</KeyboardKey>
+              </div>
+              <p>{s.manualNumbers0}</p>
+            </div>
+            <p class="text-sm px-4 py-3 rounded-lg bg-bg-card border border-border">{s.manualNumbersToggle}</p>
+          </div>
+        </section>
+
+        <!-- 5. アプリの即時終了 -->
+        <section id="quit">
+          <h2 class="text-2xl font-bold mb-6 text-text-primary flex items-center gap-3">
+            <span class="flex items-center justify-center w-8 h-8 rounded-full bg-accent/20 text-accent text-sm font-bold">5</span>
+            {s.manualQuit}
+          </h2>
+          <div class="space-y-4 text-text-secondary leading-relaxed">
+            <div class="flex items-start gap-4 p-4 rounded-xl bg-bg-card border border-border">
+              <div class="shrink-0 mt-0.5">
+                <KeyboardKey>Q</KeyboardKey>
+              </div>
+              <p>{s.manualQuitDesc}</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. 設定 -->
+        <section id="settings">
+          <h2 class="text-2xl font-bold mb-6 text-text-primary flex items-center gap-3">
+            <span class="flex items-center justify-center w-8 h-8 rounded-full bg-accent/20 text-accent text-sm font-bold">6</span>
+            {s.manualSettings}
+          </h2>
+          <div class="space-y-2 text-text-secondary leading-relaxed">
+            <p class="mb-6">{s.manualSettingsDesc}</p>
+            <div class="grid gap-3">
+              <div class="p-4 rounded-xl bg-bg-card border border-border">
+                <h3 class="font-semibold text-text-primary mb-1">{s.manualSettingsIconSize}</h3>
+                <p class="text-sm">{s.manualSettingsIconSizeDesc}</p>
+              </div>
+              <div class="p-4 rounded-xl bg-bg-card border border-border">
+                <h3 class="font-semibold text-text-primary mb-1">{s.manualSettingsCols}</h3>
+                <p class="text-sm">{s.manualSettingsColsDesc}</p>
+              </div>
+              <div class="p-4 rounded-xl bg-bg-card border border-border">
+                <h3 class="font-semibold text-text-primary mb-1">{s.manualSettingsBgColor}</h3>
+                <p class="text-sm">{s.manualSettingsBgColorDesc}</p>
+              </div>
+              <div class="p-4 rounded-xl bg-bg-card border border-border">
+                <h3 class="font-semibold text-text-primary mb-1">{s.manualSettingsBgImage}</h3>
+                <p class="text-sm">{s.manualSettingsBgImageDesc}</p>
+              </div>
+              <div class="p-4 rounded-xl bg-bg-card border border-border">
+                <h3 class="font-semibold text-text-primary mb-1">{s.manualSettingsNumberKeys}</h3>
+                <p class="text-sm">{s.manualSettingsNumberKeysDesc}</p>
+              </div>
+              <div class="p-4 rounded-xl bg-bg-card border border-border">
+                <h3 class="font-semibold text-text-primary mb-1">{s.manualSettingsAutoLaunch}</h3>
+                <p class="text-sm">{s.manualSettingsAutoLaunchDesc}</p>
+              </div>
+              <div class="p-4 rounded-xl bg-bg-card border border-border">
+                <h3 class="font-semibold text-text-primary mb-1">{s.manualSettingsLang}</h3>
+                <p class="text-sm">{s.manualSettingsLangDesc}</p>
+              </div>
+              <div class="p-4 rounded-xl bg-bg-card border border-border">
+                <h3 class="font-semibold text-text-primary mb-1">{s.manualSettingsHidden}</h3>
+                <p class="text-sm">{s.manualSettingsHiddenDesc}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. メニューバー -->
+        <section id="menubar">
+          <h2 class="text-2xl font-bold mb-6 text-text-primary flex items-center gap-3">
+            <span class="flex items-center justify-center w-8 h-8 rounded-full bg-accent/20 text-accent text-sm font-bold">7</span>
+            {s.manualMenuBar}
+          </h2>
+          <div class="space-y-4 text-text-secondary leading-relaxed">
+            <p>{s.manualMenuBarDesc}</p>
+            <ul class="space-y-2 ml-2">
+              <li class="flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></span>
+                {s.manualMenuBarAbout}
+              </li>
+              <li class="flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></span>
+                {s.manualMenuBarSettings}
+              </li>
+              <li class="flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></span>
+                {s.manualMenuBarQuit}
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- 8. トラブルシューティング -->
+        <section id="troubleshooting">
+          <h2 class="text-2xl font-bold mb-6 text-text-primary flex items-center gap-3">
+            <span class="flex items-center justify-center w-8 h-8 rounded-full bg-accent/20 text-accent text-sm font-bold">8</span>
+            {s.manualTroubleshooting}
+          </h2>
+          <div class="space-y-4">
+            <div class="p-5 rounded-xl bg-bg-card border border-border">
+              <h3 class="font-semibold text-text-primary mb-2">{s.manualTsNoShow}</h3>
+              <p class="text-text-secondary text-sm leading-relaxed">{s.manualTsNoShowDesc}</p>
+            </div>
+            <div class="p-5 rounded-xl bg-bg-card border border-border">
+              <h3 class="font-semibold text-text-primary mb-2">{s.manualTsNoResponse}</h3>
+              <p class="text-text-secondary text-sm leading-relaxed">{s.manualTsNoResponseDesc}</p>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+  <Footer lang="ja" />
+</BaseLayout>

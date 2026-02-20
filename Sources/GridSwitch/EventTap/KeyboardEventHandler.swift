@@ -26,8 +26,10 @@ class KeyboardEventHandler {
   var onArrowLeft: (() -> Void)?             // ← → 左に移動
   var onArrowRight: (() -> Void)?            // → → 右に移動
   var onNumberPressed: ((Int) -> Void)?      // 数字キー(0-9) → 直接アプリ選択
+  var onQuitPressed: (() -> Void)?            // Q → 選択中のアプリを終了
 
   private let tabKeyCode: UInt16 = 48
+  private let qKeyCode: UInt16 = 12
   private let escKeyCode: UInt16 = 53
   private let arrowUpKeyCode: UInt16 = 126
   private let arrowDownKeyCode: UInt16 = 125
@@ -184,6 +186,14 @@ class KeyboardEventHandler {
       if Settings.shared.showNumberShortcuts, let number = numberKeyCodes[keyCode] {
         DispatchQueue.main.async { [weak self] in
           self?.onNumberPressed?(number)
+        }
+        return nil  // イベント消費
+      }
+
+      // Qキー処理 → 選択中のアプリを終了
+      if keyCode == qKeyCode {
+        DispatchQueue.main.async { [weak self] in
+          self?.onQuitPressed?()
         }
         return nil  // イベント消費
       }

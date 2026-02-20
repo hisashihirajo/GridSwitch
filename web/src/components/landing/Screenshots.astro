@@ -1,0 +1,99 @@
+---
+import { t, type Lang } from '../../data/i18n';
+
+interface Props { lang?: Lang; }
+const { lang = 'en' } = Astro.props;
+const s = t[lang];
+
+const tabs = [
+  { id: 'grid', label: s.tabGrid, image: '/screenshots/grid-view.png', alt: 'GridSwitch grid view showing running applications' },
+  { id: 'settings', label: s.tabSettings, image: '/screenshots/settings.png', alt: 'GridSwitch settings panel' },
+  { id: 'background', label: s.tabBackground, image: '/screenshots/custom-bg.png', alt: 'GridSwitch with custom background image' },
+  { id: 'numbers', label: s.tabNumbers, image: '/screenshots/number-shortcuts.png', alt: 'GridSwitch with number key shortcuts displayed' },
+];
+---
+
+<section class="py-24 md:py-32">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <h2 class="fade-in text-3xl md:text-5xl font-bold mb-4">
+        {s.screenshotsTitle}
+      </h2>
+      <p class="fade-in text-text-secondary text-lg">
+        {s.screenshotsSub}
+      </p>
+    </div>
+
+    <!-- タブ切替 -->
+    <div class="fade-in flex flex-wrap justify-center gap-2 mb-10">
+      {tabs.map((tab, i) => (
+        <button
+          data-tab={tab.id}
+          class={`screenshot-tab px-5 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 cursor-pointer ${
+            i === 0
+              ? 'bg-accent text-white'
+              : 'bg-bg-card text-text-secondary hover:text-text-primary border border-border'
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+
+    <!-- スクリーンショット表示 -->
+    <div class="fade-in max-w-4xl mx-auto">
+      {tabs.map((tab, i) => (
+        <div
+          data-panel={tab.id}
+          class={`screenshot-panel ${i !== 0 ? 'hidden' : ''}`}
+        >
+          <div class="macos-window">
+            <div class="macos-window-bar">
+              <span class="macos-dot macos-dot-red"></span>
+              <span class="macos-dot macos-dot-yellow"></span>
+              <span class="macos-dot macos-dot-green"></span>
+            </div>
+            <div class="bg-bg-card">
+              <img
+                src={tab.image}
+                alt={tab.alt}
+                class="w-full"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script>
+  const tabs = document.querySelectorAll('.screenshot-tab');
+  const panels = document.querySelectorAll('.screenshot-panel');
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const targetId = tab.getAttribute('data-tab');
+
+      // すべてのタブをリセット
+      tabs.forEach((t) => {
+        t.classList.remove('bg-accent', 'text-white');
+        t.classList.add('bg-bg-card', 'text-text-secondary', 'border', 'border-border');
+      });
+
+      // アクティブタブ
+      tab.classList.add('bg-accent', 'text-white');
+      tab.classList.remove('bg-bg-card', 'text-text-secondary', 'border', 'border-border');
+
+      // パネル切替
+      panels.forEach((panel) => {
+        if (panel.getAttribute('data-panel') === targetId) {
+          panel.classList.remove('hidden');
+        } else {
+          panel.classList.add('hidden');
+        }
+      });
+    });
+  });
+</script>

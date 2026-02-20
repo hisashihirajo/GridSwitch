@@ -1,0 +1,68 @@
+---
+import Button from '../ui/Button.astro';
+import KeyboardKey from '../ui/KeyboardKey.astro';
+import { t, type Lang } from '../../data/i18n';
+
+interface Props { lang?: Lang; }
+const { lang = 'en' } = Astro.props;
+const s = t[lang];
+---
+
+<section class="gradient-bg pt-32 pb-24 md:pt-44 md:pb-32 overflow-hidden">
+  <div class="max-w-6xl mx-auto px-6 text-center">
+    <div class="fade-in mb-8">
+      <img
+        src="/app-icon.png"
+        alt="GridSwitch Icon"
+        class="w-28 h-28 md:w-36 md:h-36 mx-auto glow rounded-[28px]"
+      />
+    </div>
+
+    <h1 class="fade-in text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight mb-6">
+      {s.heroTitle1}<br />
+      <span class="bg-gradient-to-r from-accent to-blue-400 bg-clip-text text-transparent">
+        {s.heroTitle2}
+      </span>
+      {s.heroTitle3}
+    </h1>
+
+    <p class="fade-in text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-4">
+      {s.heroSub}
+    </p>
+
+    <div class="fade-in flex items-center justify-center gap-2 mb-10 text-text-secondary text-sm">
+      <span>{s.heroShortcut1}</span>
+      <KeyboardKey>&#8984;</KeyboardKey>
+      <span>+</span>
+      <KeyboardKey>Tab</KeyboardKey>
+      <span>{s.heroShortcut2}</span>
+    </div>
+
+    <div class="fade-in flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 md:mb-20">
+      <Button href="#download" variant="primary" size="lg">
+        {s.heroDownload}
+      </Button>
+      <Button href="#features" variant="secondary" size="lg">
+        {s.heroLearnMore}
+      </Button>
+    </div>
+
+    <div class="fade-in max-w-4xl mx-auto">
+      <div class="macos-window">
+        <div class="macos-window-bar">
+          <span class="macos-dot macos-dot-red"></span>
+          <span class="macos-dot macos-dot-yellow"></span>
+          <span class="macos-dot macos-dot-green"></span>
+        </div>
+        <div class="bg-bg-card">
+          <img
+            src="/screenshots/grid-view.png"
+            alt="GridSwitch in action - Grid view of running applications"
+            class="w-full"
+            loading="eager"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

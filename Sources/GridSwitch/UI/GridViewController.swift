@@ -79,6 +79,20 @@ class GridViewController: NSViewController {
     updateSelection()
   }
 
+  // 選択中のアプリをリストから除去し、グリッドを再構築して残りのアプリを返す
+  func removeSelectedApp() -> [AppInfo] {
+    guard selectedIndex >= 0, selectedIndex < apps.count else { return apps }
+    apps.remove(at: selectedIndex)
+    // 選択インデックスを調整
+    if apps.isEmpty {
+      selectedIndex = 0
+    } else if selectedIndex >= apps.count {
+      selectedIndex = apps.count - 1
+    }
+    rebuildGrid()
+    return apps
+  }
+
   // 座標からセルのインデックスを返す
   func indexOfCell(at point: NSPoint) -> Int? {
     for (index, cell) in cells.enumerated() {

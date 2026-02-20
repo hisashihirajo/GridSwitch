@@ -1,0 +1,53 @@
+---
+import { t, type Lang } from '../../data/i18n';
+
+interface Props { lang?: Lang; }
+const { lang = 'en' } = Astro.props;
+const s = t[lang];
+
+const rows = [
+  { feature: s.compLayout, standard: s.compLayoutStd, gridswitch: s.compLayoutGs },
+  { feature: s.compNav, standard: s.compNavStd, gridswitch: s.compNavGs },
+  { feature: s.compQuit, standard: s.compQuitStd, gridswitch: s.compQuitGs },
+  { feature: s.compNumber, standard: s.compNumberStd, gridswitch: s.compNumberGs },
+  { feature: s.compBg, standard: s.compBgStd, gridswitch: s.compBgGs },
+  { feature: s.compIcon, standard: s.compIconStd, gridswitch: s.compIconGs },
+  { feature: s.compCols, standard: s.compColsStd, gridswitch: s.compColsGs },
+  { feature: s.compHide, standard: s.compHideStd, gridswitch: s.compHideGs },
+  { feature: s.compLang, standard: s.compLangStd, gridswitch: s.compLangGs },
+];
+---
+
+<section class="py-24 md:py-32 gradient-bg">
+  <div class="max-w-4xl mx-auto px-6">
+    <div class="text-center mb-12">
+      <h2 class="fade-in text-3xl md:text-5xl font-bold mb-4">
+        {s.compTitle}
+      </h2>
+      <p class="fade-in text-text-secondary text-lg">
+        {s.compSub}
+      </p>
+    </div>
+
+    <div class="fade-in overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-border">
+            <th class="text-left py-4 px-4 text-sm font-medium text-text-secondary">Feature</th>
+            <th class="text-left py-4 px-4 text-sm font-medium text-text-secondary">macOS Default</th>
+            <th class="text-left py-4 px-4 text-sm font-medium text-accent">GridSwitch</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr class="border-b border-border/50">
+              <td class="py-4 px-4 text-sm font-medium">{row.feature}</td>
+              <td class="py-4 px-4 text-sm text-text-secondary">{row.standard}</td>
+              <td class="py-4 px-4 text-sm text-text-primary">{row.gridswitch}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

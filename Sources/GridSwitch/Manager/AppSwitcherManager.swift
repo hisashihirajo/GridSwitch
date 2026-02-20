@@ -51,6 +51,10 @@ class AppSwitcherManager {
       self?.activateAppByNumber(number)
     }
 
+    eventHandler.onQuitPressed = { [weak self] in
+      self?.quitSelectedApp()
+    }
+
     // マウスクリックでアプリ切り替え
     panel.onClickActivate = { [weak self] in
       self?.activateSelectedApp()
@@ -89,13 +93,12 @@ class AppSwitcherManager {
 
   // アプリがアクティブになるたびにMRU先頭に記録
   @objc private func appDidActivate(_ notification: Notification) {
-    guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-      let bundleId = app.bundleIdentifier,
-      let name = app.localizedName
+    guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
     else { return }
 
-    // bundleId:name の複合キーで同じbundleIdのPWAアプリを区別
-    let mruKey = "\(bundleId):\(name)"
+    // AppInfo.from()で解決済みの名前を使う（開発中Electronアプリ対応）
+    guard let appInfo = AppInfo.from(app) else { return }
+    let mruKey = appInfo.mruKey
     var order = Settings.shared.appMruOrder
     order.removeAll { $0 == mruKey }
     order.insert(mruKey, at: 0)
@@ -129,6 +132,16 @@ class AppSwitcherManager {
     let runningApps = NSWorkspace.shared.runningApplications
     if let app = runningApps.first(where: { $0.processIdentifier == appInfo.pid }) {
       app.activate()
+    }
+  }
+
+  private func quitSelectedApp() {
+    guard let appInfo = panel.selectedApp() else { return }
+    let runningApps = NSWorkspace.shared.runningApplications
+    if let app = runningApps.first(where: { $0.processIdentifier == appInfo.pid }) {
+      app.terminate()
+      // グリッドから除去してパネルを更新
+      panel.removeSelectedApp()
     }
   }
 

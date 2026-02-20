@@ -1,0 +1,174 @@
+---
+import Button from '../ui/Button.astro';
+import { t, type Lang } from '../../data/i18n';
+
+interface Props { lang?: Lang; }
+const { lang = 'en' } = Astro.props;
+const s = t[lang];
+
+const downloadUrl = 'https://github.com/hisashihirajo/GridSwitch/releases/download/v1.0/GridSwitch-v1.0.zip';
+const webhookUrl = 'https://n8n.atsoho.com/webhook-test/74b8b31a-b264-4f6a-9861-0a2de6b8ba33';
+---
+
+<section id="download" class="py-24 md:py-32">
+  <div class="max-w-3xl mx-auto px-6 text-center">
+    <div class="fade-in">
+      <img
+        src="/app-icon.png"
+        alt="GridSwitch"
+        class="w-20 h-20 mx-auto mb-8 glow rounded-[20px]"
+      />
+    </div>
+
+    <h2 class="fade-in text-3xl md:text-5xl font-bold mb-4">
+      {s.downloadTitle}
+    </h2>
+
+    <p class="fade-in text-text-secondary text-lg mb-10 max-w-xl mx-auto">
+      {s.downloadSub}
+    </p>
+
+    <!-- ダウンロードボタン（常時表示） -->
+    <div class="fade-in mb-8">
+      <Button href={downloadUrl} variant="primary" size="lg">
+        {s.downloadBtn}
+      </Button>
+    </div>
+
+    <div class="fade-in text-sm text-text-secondary space-y-1 mb-12">
+      <p>{s.downloadReq1}</p>
+      <p>{s.downloadReq2}</p>
+      <p class="text-xs mt-2">{s.downloadFree}</p>
+    </div>
+
+    <!-- メール登録（任意） -->
+    <div id="email-form-container" class="fade-in max-w-md mx-auto border-t border-border pt-8"
+      data-webhook-url={webhookUrl}
+      data-msg-submitting={s.downloadEmailSubmitting}
+      data-msg-success={s.downloadEmailSuccess}
+      data-msg-error={s.downloadEmailError}
+      data-msg-invalid={s.downloadEmailInvalid}
+      data-msg-submit={s.downloadEmailSubmit}
+    >
+      <p class="text-text-secondary text-sm mb-4">{s.downloadEmailHeading}</p>
+
+      <form id="email-form" novalidate>
+        <!-- ハニーポット（スパム対策） -->
+        <div class="absolute opacity-0 pointer-events-none" aria-hidden="true" tabindex="-1">
+          <input type="text" name="website" autocomplete="off" tabindex="-1" />
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+          <input
+            type="email"
+            id="email-input"
+            name="email"
+            required
+            placeholder={s.downloadEmailPlaceholder}
+            class="flex-1 px-4 py-3 rounded-xl bg-bg-card border border-border text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all duration-300 text-sm"
+          />
+          <button
+            type="submit"
+            id="email-submit-btn"
+            class="inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-300 cursor-pointer bg-bg-card hover:bg-bg-card-hover text-text-primary border border-border px-5 py-3 text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {s.downloadEmailSubmit}
+          </button>
+        </div>
+
+        <p id="email-error" class="text-red-400 text-sm mt-2 hidden"></p>
+
+        <p class="text-text-secondary/50 text-xs mt-3">
+          {s.downloadEmailPrivacy}
+        </p>
+      </form>
+    </div>
+
+    <!-- 登録成功メッセージ -->
+    <div id="email-success" class="fade-in max-w-md mx-auto border-t border-border pt-8 hidden">
+      <p id="success-message" class="text-green-400 text-sm"></p>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const container = document.getElementById('email-form-container');
+    const form = document.getElementById('email-form') as HTMLFormElement | null;
+    const emailInput = document.getElementById('email-input') as HTMLInputElement | null;
+    const submitBtn = document.getElementById('email-submit-btn') as HTMLButtonElement | null;
+    const errorEl = document.getElementById('email-error');
+    const successContainer = document.getElementById('email-success');
+    const successMessage = document.getElementById('success-message');
+
+    if (!container || !form || !emailInput || !submitBtn || !errorEl || !successContainer || !successMessage) return;
+
+    const webhookUrl = container.dataset.webhookUrl || '';
+    const msgSubmitting = container.dataset.msgSubmitting || '';
+    const msgSuccess = container.dataset.msgSuccess || '';
+    const msgError = container.dataset.msgError || '';
+    const msgInvalid = container.dataset.msgInvalid || '';
+    const msgSubmit = container.dataset.msgSubmit || '';
+
+    function showError(msg: string) {
+      errorEl!.textContent = msg;
+      errorEl!.classList.remove('hidden');
+    }
+
+    function hideError() {
+      errorEl!.classList.add('hidden');
+      errorEl!.textContent = '';
+    }
+
+    function isValidEmail(email: string): boolean {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const email = emailInput!.value.trim();
+
+      if (!email || !isValidEmail(email)) {
+        showError(msgInvalid);
+        return;
+      }
+
+      // ハニーポットチェック
+      const honeypot = form.querySelector<HTMLInputElement>('input[name="website"]');
+      if (honeypot && honeypot.value) {
+        container!.classList.add('hidden');
+        successMessage!.textContent = msgSuccess;
+        successContainer!.classList.remove('hidden');
+        return;
+      }
+
+      submitBtn!.disabled = true;
+      submitBtn!.textContent = msgSubmitting;
+
+      try {
+        const res = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email,
+            source: window.location.href,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        container!.classList.add('hidden');
+        successMessage!.textContent = msgSuccess;
+        successContainer!.classList.remove('hidden');
+      } catch {
+        showError(msgError);
+        submitBtn!.disabled = false;
+        submitBtn!.textContent = msgSubmit;
+      }
+    });
+  });
+</script>

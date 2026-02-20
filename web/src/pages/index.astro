@@ -1,0 +1,25 @@
+---
+import '../styles/global.css';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/layout/Header.astro';
+import Footer from '../components/layout/Footer.astro';
+import Hero from '../components/landing/Hero.astro';
+import Features from '../components/landing/Features.astro';
+import HowItWorks from '../components/landing/HowItWorks.astro';
+import Screenshots from '../components/landing/Screenshots.astro';
+import Comparison from '../components/landing/Comparison.astro';
+import Download from '../components/landing/Download.astro';
+---
+
+<BaseLayout title="GridSwitch - A Better App Switcher for macOS">
+  <Header lang="en" />
+  <main>
+    <Hero lang="en" />
+    <Features lang="en" />
+    <HowItWorks lang="en" />
+    <Screenshots lang="en" />
+    <Comparison lang="en" />
+    <Download lang="en" />
+  </main>
+  <Footer lang="en" />
+</BaseLayout>
