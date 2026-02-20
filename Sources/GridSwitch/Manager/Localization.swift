@@ -32,6 +32,7 @@ enum L10n {
   static var clearImage: String { current == .ja ? "クリア" : "Clear" }
   static var selectImageTitle: String { current == .ja ? "背景画像を選択" : "Select Background Image" }
   static var noImage: String { current == .ja ? "未設定" : "Not Set" }
+  static var numberShortcuts: String { current == .ja ? "数字キーでアプリを切り替え" : "Switch apps with number keys" }
   static var launchAtLogin: String { current == .ja ? "Mac起動時に自動で起動する" : "Launch at Login" }
   static var language: String { current == .ja ? "言語:" : "Language:" }
 

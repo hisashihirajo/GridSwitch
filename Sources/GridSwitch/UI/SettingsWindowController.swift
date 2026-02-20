@@ -13,6 +13,7 @@ class SettingsWindowController: NSWindowController {
   private var imagePathLabel: NSTextField!
   private var imageOpacitySlider: NSSlider!
   private var imageOpacityLabel: NSTextField!
+  private var numberShortcutsCheckbox: NSButton!
   private var launchAtLoginCheckbox: NSButton!
   private var languagePopup: NSPopUpButton!
   private var hiddenAppsCountLabel: NSTextField!
@@ -242,6 +243,11 @@ class SettingsWindowController: NSWindowController {
     stackView.addArrangedSubview(separator)
     separator.widthAnchor.constraint(equalTo: stackView.widthAnchor, constant: -40).isActive = true
 
+    // 数字キーショートカット
+    numberShortcutsCheckbox = NSButton(checkboxWithTitle: L10n.numberShortcuts, target: self, action: #selector(numberShortcutsChanged))
+    numberShortcutsCheckbox.state = settings.showNumberShortcuts ? .on : .off
+    stackView.addArrangedSubview(numberShortcutsCheckbox)
+
     // ログイン時に自動起動
     launchAtLoginCheckbox = NSButton(checkboxWithTitle: L10n.launchAtLogin, target: self, action: #selector(launchAtLoginChanged))
     launchAtLoginCheckbox.state = LaunchAtLogin.isEnabled ? .on : .off
@@ -291,6 +297,10 @@ class SettingsWindowController: NSWindowController {
     let value = CGFloat(imageOpacitySlider.doubleValue)
     imageOpacityLabel.stringValue = "\(Int(value * 100))%"
     settings.backgroundImageOpacity = value
+  }
+
+  @objc private func numberShortcutsChanged() {
+    settings.showNumberShortcuts = numberShortcutsCheckbox.state == .on
   }
 
   @objc private func launchAtLoginChanged() {

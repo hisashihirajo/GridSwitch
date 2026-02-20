@@ -25,6 +25,7 @@ class KeyboardEventHandler {
   var onArrowDown: (() -> Void)?             // ↓ → 下に移動
   var onArrowLeft: (() -> Void)?             // ← → 左に移動
   var onArrowRight: (() -> Void)?            // → → 右に移動
+  var onNumberPressed: ((Int) -> Void)?      // 数字キー(0-9) → 直接アプリ選択
 
   private let tabKeyCode: UInt16 = 48
   private let escKeyCode: UInt16 = 53
@@ -32,6 +33,12 @@ class KeyboardEventHandler {
   private let arrowDownKeyCode: UInt16 = 125
   private let arrowLeftKeyCode: UInt16 = 123
   private let arrowRightKeyCode: UInt16 = 124
+
+  // 数字キー: 1-9, 0 のキーコード（メインキーボード上段）
+  private let numberKeyCodes: [UInt16: Int] = [
+    18: 1, 19: 2, 20: 3, 21: 4, 23: 5,
+    22: 6, 26: 7, 28: 8, 25: 9, 29: 0,
+  ]
 
   private init() {}
 
@@ -84,6 +91,11 @@ class KeyboardEventHandler {
     isCmdHeld = false
     isSwitcherActive = false
     NSLog("CGEventTap停止")
+  }
+
+  // スイッチャーの状態をリセット（外部から呼び出し用）
+  func deactivateSwitcher() {
+    isSwitcherActive = false
   }
 
   // CGEventTapがタイムアウトで無効化された場合の再有効化
@@ -165,6 +177,14 @@ class KeyboardEventHandler {
       }
       if let callback = arrowCallback {
         DispatchQueue.main.async { callback() }
+        return nil  // イベント消費
+      }
+
+      // 数字キー処理（0-9で直接アプリ切り替え、設定でON時のみ）
+      if Settings.shared.showNumberShortcuts, let number = numberKeyCodes[keyCode] {
+        DispatchQueue.main.async { [weak self] in
+          self?.onNumberPressed?(number)
+        }
         return nil  // イベント消費
       }
     }

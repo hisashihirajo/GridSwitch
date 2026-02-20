@@ -19,6 +19,7 @@ class Settings {
     case appMruOrder
     case hiddenApps
     case maxColumns
+    case showNumberShortcuts
   }
 
   private init() {
@@ -35,6 +36,7 @@ class Settings {
       Key.backgroundImageOpacity.rawValue: 1.0,
       Key.language.rawValue: "ja",
       Key.maxColumns.rawValue: 8,
+      Key.showNumberShortcuts.rawValue: true,
     ])
   }
 
@@ -133,6 +135,15 @@ class Settings {
     get { defaults.integer(forKey: Key.maxColumns.rawValue) }
     set {
       defaults.set(min(max(newValue, 4), 12), forKey: Key.maxColumns.rawValue)
+      notifyChanged()
+    }
+  }
+
+  // 数字キーショートカットの表示・有効化
+  var showNumberShortcuts: Bool {
+    get { defaults.bool(forKey: Key.showNumberShortcuts.rawValue) }
+    set {
+      defaults.set(newValue, forKey: Key.showNumberShortcuts.rawValue)
       notifyChanged()
     }
   }

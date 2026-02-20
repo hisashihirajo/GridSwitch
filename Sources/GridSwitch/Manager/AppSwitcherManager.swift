@@ -47,6 +47,10 @@ class AppSwitcherManager {
       self?.panel.selectRight()
     }
 
+    eventHandler.onNumberPressed = { [weak self] number in
+      self?.activateAppByNumber(number)
+    }
+
     // マウスクリックでアプリ切り替え
     panel.onClickActivate = { [weak self] in
       self?.activateSelectedApp()
@@ -102,6 +106,14 @@ class AppSwitcherManager {
     appProvider.refreshApps()
     let apps = appProvider.appsWithMruOrder()
     panel.showWithApps(apps)
+  }
+
+  // 数字キーで直接アプリ切り替え（1→0番目、2→1番目、...、9→8番目、0→9番目）
+  private func activateAppByNumber(_ number: Int) {
+    let index = number == 0 ? 9 : number - 1
+    panel.selectIndex(index)
+    eventHandler.deactivateSwitcher()
+    activateSelectedApp()
   }
 
   private func activateSelectedApp() {

@@ -5,6 +5,7 @@ class AppIconCell: NSView {
   private let iconView = NSImageView()
   private let nameLabel = NSTextField(labelWithString: "")
   private let highlightView = NSView()
+  private let numberBadge = NSTextField(labelWithString: "")
 
   var isHighlighted: Bool = false {
     didSet {
@@ -40,11 +41,35 @@ class AppIconCell: NSView {
     nameLabel.lineBreakMode = .byTruncatingTail
     nameLabel.maximumNumberOfLines = 1
     addSubview(nameLabel)
+
+    // 数字オーバーレイ（アイコン中央に薄く表示）
+    numberBadge.font = NSFont.systemFont(ofSize: 64, weight: .heavy)
+    numberBadge.textColor = NSColor.white.withAlphaComponent(0.85)
+    numberBadge.alignment = .center
+    numberBadge.wantsLayer = true
+    numberBadge.layer?.backgroundColor = NSColor.clear.cgColor
+    numberBadge.isBezeled = false
+    numberBadge.drawsBackground = false
+    numberBadge.shadow = {
+      let s = NSShadow()
+      s.shadowColor = NSColor.black.withAlphaComponent(1.0)
+      s.shadowBlurRadius = 16
+      s.shadowOffset = NSSize(width: 0, height: -2)
+      return s
+    }()
+    numberBadge.isHidden = true
+    addSubview(numberBadge)
   }
 
-  func configure(with appInfo: AppInfo) {
+  func configure(with appInfo: AppInfo, shortcutNumber: Int? = nil) {
     iconView.image = appInfo.icon
     nameLabel.stringValue = appInfo.name
+    if let number = shortcutNumber {
+      numberBadge.stringValue = "\(number)"
+      numberBadge.isHidden = false
+    } else {
+      numberBadge.isHidden = true
+    }
     layoutSubviews()
   }
 
@@ -62,6 +87,11 @@ class AppIconCell: NSView {
     let labelHeight: CGFloat = 16
     let labelY = iconY - labelHeight - 2
     nameLabel.frame = NSRect(x: 4, y: labelY, width: bounds.width - 8, height: labelHeight)
+
+    // 数字オーバーレイ: アイコンど真ん中に配置
+    let badgeH: CGFloat = 72
+    let badgeY = iconView.frame.midY - badgeH / 2
+    numberBadge.frame = NSRect(x: iconView.frame.minX, y: badgeY, width: iconSize, height: badgeH)
 
     highlightView.frame = bounds.insetBy(dx: 2, dy: 2)
   }

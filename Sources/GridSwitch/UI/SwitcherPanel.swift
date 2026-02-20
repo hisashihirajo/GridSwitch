@@ -132,6 +132,10 @@ class SwitcherPanel: NSPanel {
     gridViewController.selectRight()
   }
 
+  func selectIndex(_ index: Int) {
+    gridViewController.selectIndex(index)
+  }
+
   // マウスクリックでアプリ選択時のコールバック
   var onClickActivate: (() -> Void)?
 

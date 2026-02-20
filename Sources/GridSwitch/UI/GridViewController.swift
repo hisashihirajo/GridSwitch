@@ -116,7 +116,9 @@ class GridViewController: NSViewController {
       let cell = AppIconCell(
         frame: NSRect(x: x, y: y, width: cellW, height: cellH)
       )
-      cell.configure(with: app)
+      // 0-9番目のアプリにショートカット番号バッジを表示（1,2,...,9,0）
+      let shortcutNumber: Int? = Settings.shared.showNumberShortcuts && index < 10 ? (index + 1) % 10 : nil
+      cell.configure(with: app, shortcutNumber: shortcutNumber)
       cell.isHighlighted = (index == selectedIndex)
 
       view.addSubview(cell)
