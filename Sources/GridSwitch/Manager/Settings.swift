@@ -17,6 +17,7 @@ class Settings {
     case backgroundImageOpacity
     case language
     case appMruOrder
+    case hiddenApps
   }
 
   private init() {
@@ -104,6 +105,15 @@ class Settings {
     get { defaults.string(forKey: Key.language.rawValue) ?? "ja" }
     set {
       defaults.set(newValue, forKey: Key.language.rawValue)
+      notifyChanged()
+    }
+  }
+
+  // 非表示アプリ（mruKeyの配列）
+  var hiddenApps: [String] {
+    get { defaults.stringArray(forKey: Key.hiddenApps.rawValue) ?? [] }
+    set {
+      defaults.set(newValue, forKey: Key.hiddenApps.rawValue)
       notifyChanged()
     }
   }

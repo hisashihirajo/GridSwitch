@@ -34,6 +34,13 @@ enum L10n {
   static var launchAtLogin: String { current == .ja ? "Mac起動時に自動で起動する" : "Launch at Login" }
   static var language: String { current == .ja ? "言語:" : "Language:" }
 
+  // 非表示アプリ
+  static var hiddenApps: String { current == .ja ? "非表示アプリ:" : "Hidden Apps:" }
+  static var hiddenAppsDescription: String { current == .ja ? "チェックしたアプリはスイッチャーに表示されません" : "Checked apps will be hidden from the switcher" }
+  static var editHiddenApps: String { current == .ja ? "編集..." : "Edit..." }
+  static var hiddenAppsWindowTitle: String { current == .ja ? "非表示アプリの設定" : "Hidden Apps Settings" }
+  static var noHiddenApps: String { current == .ja ? "なし" : "None" }
+
   // メニュー
   static var about: String { current == .ja ? "GridSwitch について" : "About GridSwitch" }
   static var settingsMenu: String { current == .ja ? "設定..." : "Settings..." }

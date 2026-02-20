@@ -43,9 +43,13 @@ class RunningAppProvider {
     var ordered: [AppInfo] = []
     var remaining = apps
 
-    // MRU順に並べる
-    for bundleId in mruOrder {
-      if let index = remaining.firstIndex(where: { $0.bundleIdentifier == bundleId }) {
+    // 非表示アプリを除外
+    let hidden = Settings.shared.hiddenApps
+    remaining.removeAll { hidden.contains($0.mruKey) }
+
+    // MRU順に並べる（mruKeyで同一bundleIdのPWAアプリも区別）
+    for key in mruOrder {
+      if let index = remaining.firstIndex(where: { $0.mruKey == key }) {
         ordered.append(remaining.remove(at: index))
       }
     }

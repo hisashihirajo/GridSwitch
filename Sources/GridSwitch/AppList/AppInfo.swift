@@ -7,6 +7,12 @@ struct AppInfo: Hashable {
   let pid: pid_t
   let bundleIdentifier: String?
 
+  // MRU識別用キー（bundleId:名前 で同じbundleIdのPWAアプリを区別）
+  var mruKey: String {
+    let id = bundleIdentifier ?? "unknown"
+    return "\(id):\(name)"
+  }
+
   func hash(into hasher: inout Hasher) {
     hasher.combine(pid)
   }

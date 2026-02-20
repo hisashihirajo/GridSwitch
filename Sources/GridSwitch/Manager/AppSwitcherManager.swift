@@ -86,12 +86,15 @@ class AppSwitcherManager {
   // アプリがアクティブになるたびにMRU先頭に記録
   @objc private func appDidActivate(_ notification: Notification) {
     guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-      let bundleId = app.bundleIdentifier
+      let bundleId = app.bundleIdentifier,
+      let name = app.localizedName
     else { return }
 
+    // bundleId:name の複合キーで同じbundleIdのPWAアプリを区別
+    let mruKey = "\(bundleId):\(name)"
     var order = Settings.shared.appMruOrder
-    order.removeAll { $0 == bundleId }
-    order.insert(bundleId, at: 0)
+    order.removeAll { $0 == mruKey }
+    order.insert(mruKey, at: 0)
     Settings.shared.appMruOrder = order
   }
 
