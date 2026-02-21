@@ -27,6 +27,7 @@ class KeyboardEventHandler {
   var onArrowRight: (() -> Void)?            // → → 右に移動
   var onNumberPressed: ((Int) -> Void)?      // 数字キー(0-9) → 直接アプリ選択
   var onQuitPressed: (() -> Void)?            // Q → 選択中のアプリを終了
+  var onCtrlPressed: (() -> Void)?            // Ctrl → グリッド上で1つ前に移動
 
   private let tabKeyCode: UInt16 = 48
   private let qKeyCode: UInt16 = 12
@@ -127,18 +128,35 @@ class KeyboardEventHandler {
     }
   }
 
+  // Cmdキーのキーコード（左: 55, 右: 54）
+  private let cmdKeyCodes: Set<UInt16> = [55, 54]
+  // Ctrlキーのキーコード（左: 59, 右: 62）
+  private let ctrlKeyCodes: Set<UInt16> = [59, 62]
+
   // 修飾キーの状態変化を処理
   private func handleFlagsChanged(_ event: CGEvent) -> CGEvent? {
     let flags = event.flags
     let cmdHeld = flags.contains(.maskCommand)
     let shiftHeld = flags.contains(.maskShift)
+    let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
 
     isShiftHeld = shiftHeld
+
+    // スイッチャーアクティブ中にCtrlキーが押された → 1つ前に移動
+    if isSwitcherActive && ctrlKeyCodes.contains(keyCode) && flags.contains(.maskControl) {
+      onCtrlPressed?()
+      return nil  // イベント消費
+    }
 
     if cmdHeld && !isCmdHeld {
       // Cmdが押された
       isCmdHeld = true
     } else if !cmdHeld && isCmdHeld {
+      // スイッチャーアクティブ中は、Cmdキー自体のflagsChangedのみCmd解放と判定
+      // （Ctrl等の他の修飾キー操作でCmdフラグが一時的に落ちるケースを無視する）
+      if isSwitcherActive && !cmdKeyCodes.contains(keyCode) {
+        return event
+      }
       // Cmdが離された
       isCmdHeld = false
       if isSwitcherActive {

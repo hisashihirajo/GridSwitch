@@ -51,9 +51,23 @@ enum L10n {
   // About
   static var aboutDescription: String {
     current == .ja
-      ? "グリッド型アプリケーションスイッチャー v1.0"
-      : "Grid Application Switcher v1.0"
+      ? "グリッド型アプリケーションスイッチャー v1.1"
+      : "Grid Application Switcher v1.1"
   }
+
+  // アップデート
+  static var checkForUpdates: String { current == .ja ? "アップデートを確認..." : "Check for Updates..." }
+  static var updateAvailable: String { current == .ja ? "アップデートがあります" : "Update Available" }
+  static func updateMessage(newVersion: String) -> String {
+    current == .ja
+      ? "GridSwitch v\(newVersion) が利用可能です。今すぐ更新しますか？"
+      : "GridSwitch v\(newVersion) is available. Would you like to update now?"
+  }
+  static var updateNow: String { current == .ja ? "今すぐ更新" : "Update Now" }
+  static var updateLater: String { current == .ja ? "後で" : "Later" }
+  static var noUpdateAvailable: String { current == .ja ? "最新バージョンです" : "You're up to date" }
+  static var downloading: String { current == .ja ? "ダウンロード中..." : "Downloading..." }
+  static var updateFailed: String { current == .ja ? "アップデートに失敗しました" : "Update failed" }
 
   // アクセシビリティ
   static var accessibilityRequired: String {

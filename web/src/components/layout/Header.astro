@@ -6,6 +6,9 @@ const { lang = 'en' } = Astro.props;
 const s = t[lang];
 const homeHref = lang === 'ja' ? '/ja' : '/';
 const manualHref = lang === 'ja' ? '/ja/manual' : '/manual';
+const blogHref = lang === 'ja' ? '/ja/blog' : '/blog';
+const featuresHref = lang === 'ja' ? '/ja#features' : '/#features';
+const downloadHref = lang === 'ja' ? '/ja#download' : '/#download';
 ---
 
 <header id="header" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
@@ -16,9 +19,9 @@ const manualHref = lang === 'ja' ? '/ja/manual' : '/manual';
     </a>
 
     <div class="hidden sm:flex items-center gap-8">
-      <a href="#features" class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.features}</a>
-      <a href="#download" class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.download}</a>
-      <a href="/blog" class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.blog}</a>
+      <a href={featuresHref} class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.features}</a>
+      <a href={downloadHref} class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.download}</a>
+      <a href={blogHref} class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.blog}</a>
       <a href={manualHref} class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.manual}</a>
       <div class="relative" id="lang-switcher">
         <button id="lang-btn" class="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors cursor-pointer" aria-label="Language">
@@ -50,9 +53,9 @@ const manualHref = lang === 'ja' ? '/ja/manual' : '/manual';
   <!-- モバイルメニュー -->
   <div id="mobile-menu" class="sm:hidden hidden border-t border-border">
     <div class="px-6 py-4 flex flex-col gap-4">
-      <a href="#features" class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.features}</a>
-      <a href="#download" class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.download}</a>
-      <a href="/blog" class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.blog}</a>
+      <a href={featuresHref} class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.features}</a>
+      <a href={downloadHref} class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.download}</a>
+      <a href={blogHref} class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.blog}</a>
       <a href={manualHref} class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.manual}</a>
       <div class="flex items-center gap-3 pt-2 border-t border-border">
         <a href="/" class={`text-sm ${lang === 'en' ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary transition-colors'}`}>English</a>

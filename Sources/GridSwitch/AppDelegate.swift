@@ -13,6 +13,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     switcherManager.start()
     NSLog("[GridSwitch] 起動完了")
 
+    // バックグラウンドでアップデートチェック
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+      UpdateChecker.shared.checkForUpdatesInBackground()
+    }
+
     // 言語変更時にメニューを再構築
     NotificationCenter.default.addObserver(
       self,
@@ -59,6 +64,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         keyEquivalent: ","
       )
     )
+    menu.addItem(
+      NSMenuItem(
+        title: L10n.checkForUpdates,
+        action: #selector(checkForUpdates),
+        keyEquivalent: ""
+      )
+    )
     menu.addItem(NSMenuItem.separator())
     menu.addItem(
       NSMenuItem(
@@ -81,6 +93,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   @objc private func showSettings() {
     settingsWindowController.showWindow()
+  }
+
+  @objc private func checkForUpdates() {
+    UpdateChecker.shared.checkForUpdatesManually()
   }
 
   @objc private func quit() {

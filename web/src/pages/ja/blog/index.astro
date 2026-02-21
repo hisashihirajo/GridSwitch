@@ -1,0 +1,48 @@
+---
+import '../../../styles/global.css';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Header from '../../../components/layout/Header.astro';
+import Footer from '../../../components/layout/Footer.astro';
+import { getCollection } from 'astro:content';
+
+const posts = await getCollection('blog-ja');
+const sortedPosts = posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+---
+
+<BaseLayout title="ブログ - GridSwitch">
+  <Header lang="ja" />
+  <main class="pt-32 pb-24">
+    <div class="max-w-4xl mx-auto px-6">
+      <h1 class="text-4xl md:text-5xl font-bold mb-4">ブログ</h1>
+      <p class="text-text-secondary text-lg mb-12">
+        GridSwitchの最新情報、開発ノート、使い方のヒント。
+      </p>
+
+      {sortedPosts.length === 0 ? (
+        <div class="text-center py-20">
+          <p class="text-text-secondary text-lg">まだ投稿はありません。近日公開！</p>
+        </div>
+      ) : (
+        <div class="space-y-8">
+          {sortedPosts.map((post) => (
+            <a
+              href={`/ja/blog/${post.id}`}
+              class="block bg-bg-card hover:bg-bg-card-hover border border-border rounded-2xl p-6 md:p-8 transition-all duration-300 hover:border-accent/30"
+            >
+              <time class="text-sm text-text-secondary">
+                {post.data.pubDate.toLocaleDateString('ja-JP', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </time>
+              <h2 class="text-xl font-semibold mt-2 mb-2">{post.data.title}</h2>
+              <p class="text-text-secondary text-sm">{post.data.description}</p>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  </main>
+  <Footer lang="ja" />
+</BaseLayout>

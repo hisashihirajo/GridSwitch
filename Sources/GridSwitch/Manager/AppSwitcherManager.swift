@@ -55,6 +55,10 @@ class AppSwitcherManager {
       self?.quitSelectedApp()
     }
 
+    eventHandler.onCtrlPressed = { [weak self] in
+      self?.panel.selectPrevious()
+    }
+
     // マウスクリックでアプリ切り替え
     panel.onClickActivate = { [weak self] in
       self?.activateSelectedApp()

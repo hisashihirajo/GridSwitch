@@ -109,6 +109,7 @@ export const t = {
     manualGridTab: 'Press Tab to move to the next app, or Shift+Tab to move to the previous app.',
     manualGridCmdTab: 'Press Cmd+Tab again (while the grid is open) to move to the next app.',
     manualGridCmdShiftTab: 'Press Cmd+Shift+Tab to move to the previous app.',
+    manualGridCtrl: 'While holding Cmd, press Ctrl to move to the previous app.',
     manualGridMouse: 'Click on any app icon with the mouse to select and switch to it.',
 
     // Manual - Number Key Shortcuts
@@ -293,6 +294,7 @@ export const t = {
     manualGridTab: 'Tabで次のアプリ、Shift+Tabで前のアプリに移動します。',
     manualGridCmdTab: 'グリッド表示中にCmd+Tabを追加で押すと、次のアプリに移動します。',
     manualGridCmdShiftTab: 'Cmd+Shift+Tabで前のアプリに移動します。',
+    manualGridCtrl: 'Cmdを押したまま、Ctrlを押すと前のアプリに移動します。',
     manualGridMouse: 'マウスでアプリアイコンをクリックして選択・切り替えできます。',
 
     // Manual - Number Key Shortcuts
