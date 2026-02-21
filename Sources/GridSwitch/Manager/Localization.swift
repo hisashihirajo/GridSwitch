@@ -51,8 +51,8 @@ enum L10n {
   // About
   static var aboutDescription: String {
     current == .ja
-      ? "グリッド型アプリケーションスイッチャー v1.1"
-      : "Grid Application Switcher v1.1"
+      ? "グリッド型アプリケーションスイッチャー v1.2"
+      : "Grid Application Switcher v1.2"
   }
 
   // アップデート
