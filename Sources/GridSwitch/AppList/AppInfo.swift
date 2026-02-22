@@ -6,6 +6,7 @@ struct AppInfo: Hashable {
   let icon: NSImage
   let pid: pid_t
   let bundleIdentifier: String?
+  var badgeLabel: String?  // Dockバッジ（通知数など）
 
   // MRU識別用キー（bundleId:名前 で同じbundleIdのPWAアプリを区別）
   var mruKey: String {

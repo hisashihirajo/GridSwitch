@@ -87,11 +87,15 @@ class AppSwitcherManager {
     Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
       self?.eventHandler.reEnableTapIfNeeded()
     }
+
+    // Dockバッジの定期取得を開始
+    BadgeProvider.shared.startPeriodicUpdate()
   }
 
   func stop() {
     eventHandler.stop()
     panel.dismiss()
+    BadgeProvider.shared.stopPeriodicUpdate()
     NSWorkspace.shared.notificationCenter.removeObserver(self)
   }
 
@@ -111,7 +115,14 @@ class AppSwitcherManager {
 
   private func showSwitcher() {
     appProvider.refreshApps()
-    let apps = appProvider.appsWithMruOrder()
+    var apps = appProvider.appsWithMruOrder()
+
+    // キャッシュ済みのバッジ情報を即座に適用（ブロックしない）
+    let badges = BadgeProvider.shared.getBadges(for: apps)
+    for i in apps.indices {
+      apps[i].badgeLabel = badges[apps[i].pid]
+    }
+
     panel.showWithApps(apps)
   }
 

@@ -81,6 +81,11 @@ class SwitcherPanel: NSPanel {
     }
   }
 
+  // バッジ情報を非同期で更新
+  func updateBadges(_ badges: [pid_t: String]) {
+    gridViewController.updateBadges(badges)
+  }
+
   func dismiss() {
     NSAnimationContext.runAnimationGroup(
       { context in

@@ -140,6 +140,17 @@ class GridViewController: NSViewController {
     }
   }
 
+  // バッジ情報を非同期で更新（グリッド再構築なし）
+  func updateBadges(_ badges: [pid_t: String]) {
+    for (index, app) in apps.enumerated() where index < cells.count {
+      if let badge = badges[app.pid] {
+        apps[index].badgeLabel = badge
+        let shortcutNumber: Int? = Settings.shared.showNumberShortcuts && index < 10 ? (index + 1) % 10 : nil
+        cells[index].configure(with: apps[index], shortcutNumber: shortcutNumber)
+      }
+    }
+  }
+
   private func updateSelection() {
     for (index, cell) in cells.enumerated() {
       cell.isHighlighted = (index == selectedIndex)
