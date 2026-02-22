@@ -1,4 +1,5 @@
 import AppKit
+import DockBadgeKit
 
 // 全コンポーネントの連携を管理
 class AppSwitcherManager {
@@ -89,13 +90,13 @@ class AppSwitcherManager {
     }
 
     // Dockバッジの定期取得を開始
-    BadgeProvider.shared.startPeriodicUpdate()
+    DockBadgeKit.shared.startPeriodicUpdate()
   }
 
   func stop() {
     eventHandler.stop()
     panel.dismiss()
-    BadgeProvider.shared.stopPeriodicUpdate()
+    DockBadgeKit.shared.stopPeriodicUpdate()
     NSWorkspace.shared.notificationCenter.removeObserver(self)
   }
 
@@ -118,7 +119,8 @@ class AppSwitcherManager {
     var apps = appProvider.appsWithMruOrder()
 
     // キャッシュ済みのバッジ情報を即座に適用（ブロックしない）
-    let badges = BadgeProvider.shared.getBadges(for: apps)
+    let badgeApps = apps.map { DockBadgeApp(name: $0.name, pid: $0.pid, bundleIdentifier: $0.bundleIdentifier) }
+    let badges = DockBadgeKit.shared.getBadges(for: badgeApps)
     for i in apps.indices {
       apps[i].badgeLabel = badges[apps[i].pid]
     }

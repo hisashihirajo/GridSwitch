@@ -1,9 +1,22 @@
 import AppKit
 import ApplicationServices
 
+// アプリ識別用の軽量struct（AppInfoへの依存を排除）
+public struct DockBadgeApp {
+  public let name: String
+  public let pid: pid_t
+  public let bundleIdentifier: String?
+
+  public init(name: String, pid: pid_t, bundleIdentifier: String?) {
+    self.name = name
+    self.pid = pid
+    self.bundleIdentifier = bundleIdentifier
+  }
+}
+
 // Dockのバッジ数をAccessibility APIで取得（キャッシュ付き）
-class BadgeProvider {
-  static let shared = BadgeProvider()
+public class DockBadgeKit {
+  public static let shared = DockBadgeKit()
 
   // キャッシュ（アプリ名 → バッジ文字列）
   private var cachedBadges: [String: String] = [:]
@@ -12,20 +25,25 @@ class BadgeProvider {
   private init() {}
 
   // 定期更新を開始（メインスレッドのタイマー）
-  func startPeriodicUpdate() {
+  public func startPeriodicUpdate(interval: TimeInterval = 2.0) {
     refreshBadges()
-    timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+    timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
       self?.refreshBadges()
     }
   }
 
-  func stopPeriodicUpdate() {
+  public func stopPeriodicUpdate() {
     timer?.invalidate()
     timer = nil
   }
 
+  // キャッシュから全バッジを取得（アプリ名 → バッジ文字列）
+  public func getAllBadges() -> [String: String] {
+    return cachedBadges
+  }
+
   // キャッシュからバッジを取得（pid → バッジ文字列）
-  func getBadges(for apps: [AppInfo]) -> [pid_t: String] {
+  public func getBadges(for apps: [DockBadgeApp]) -> [pid_t: String] {
     guard !cachedBadges.isEmpty else { return [:] }
 
     var result: [pid_t: String] = [:]

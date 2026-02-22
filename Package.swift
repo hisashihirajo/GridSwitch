@@ -7,9 +7,13 @@ let package = Package(
   platforms: [
     .macOS(.v14),
   ],
+  dependencies: [
+    .package(path: "DockBadgeKit"),
+  ],
   targets: [
     .executableTarget(
       name: "GridSwitch",
+      dependencies: ["DockBadgeKit"],
       path: "Sources/GridSwitch",
       linkerSettings: [
         .linkedFramework("AppKit"),
