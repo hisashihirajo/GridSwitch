@@ -26,13 +26,8 @@ class AppIconCell: NSView {
   }
 
   private func setup() {
-    // セル自体のクリッピングを無効化（バッジがはみ出せるように）
-    wantsLayer = true
-    layer?.masksToBounds = false
-
     // ハイライト背景
     highlightView.wantsLayer = true
-    highlightView.layer?.cornerRadius = SwitcherAppearance.highlightCornerRadius
     highlightView.isHidden = true
     addSubview(highlightView)
 
@@ -52,8 +47,6 @@ class AppIconCell: NSView {
     numberBadge.font = NSFont.systemFont(ofSize: 64, weight: .heavy)
     numberBadge.textColor = NSColor.white.withAlphaComponent(0.85)
     numberBadge.alignment = .center
-    numberBadge.wantsLayer = true
-    numberBadge.layer?.backgroundColor = NSColor.clear.cgColor
     numberBadge.isBezeled = false
     numberBadge.drawsBackground = false
     numberBadge.shadow = {
@@ -68,9 +61,6 @@ class AppIconCell: NSView {
 
     // 通知バッジ（Dock風の赤い丸にカウント表示）
     notificationBadgeBg.wantsLayer = true
-    notificationBadgeBg.layer?.backgroundColor = NSColor.systemRed.cgColor
-    notificationBadgeBg.layer?.borderColor = NSColor.white.withAlphaComponent(0.9).cgColor
-    notificationBadgeBg.layer?.borderWidth = 1.5
     notificationBadgeBg.isHidden = true
     addSubview(notificationBadgeBg)
 
@@ -80,6 +70,17 @@ class AppIconCell: NSView {
     notificationBadge.drawsBackground = false
     notificationBadge.isHidden = true
     addSubview(notificationBadge)
+  }
+
+  override func viewDidMoveToWindow() {
+    super.viewDidMoveToWindow()
+    guard window != nil else { return }
+    // layerが確実に存在するタイミングでCALayer設定を適用
+    layer?.masksToBounds = false
+    highlightView.layer?.cornerRadius = SwitcherAppearance.highlightCornerRadius
+    notificationBadgeBg.layer?.backgroundColor = NSColor.systemRed.cgColor
+    notificationBadgeBg.layer?.borderColor = NSColor.white.withAlphaComponent(0.9).cgColor
+    notificationBadgeBg.layer?.borderWidth = 1.5
   }
 
   func configure(with appInfo: AppInfo, shortcutNumber: Int? = nil) {
