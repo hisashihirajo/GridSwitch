@@ -79,6 +79,21 @@ class KeyboardEventHandler {
     CGEvent.tapEnable(tap: tap, enable: true)
 
     NSLog("CGEventTap開始: Cmd+Tab傍受を有効化")
+
+    // 5秒ごとにtap有効状態を監視
+    DispatchQueue.global(qos: .background).async { [weak self] in
+      while true {
+        Thread.sleep(forTimeInterval: 5)
+        guard let tap = self?.eventTap else { return }
+        let enabled = CGEvent.tapIsEnabled(tap: tap)
+        NSLog("[GridSwitch][TAP-MONITOR] tapIsEnabled=%@", enabled ? "true" : "false")
+        if !enabled {
+          CGEvent.tapEnable(tap: tap, enable: true)
+          NSLog("[GridSwitch][TAP-MONITOR] tap re-enabled")
+        }
+      }
+    }
+
     return true
   }
 
@@ -251,6 +266,7 @@ private func eventTapCallback(
   event: CGEvent,
   userInfo: UnsafeMutableRawPointer?
 ) -> Unmanaged<CGEvent>? {
+  NSLog("[GridSwitch][TAP] callback type=%d", type.rawValue)
   let result = KeyboardEventHandler.shared.handleEvent(type: type, event: event)
   if let result = result {
     return Unmanaged.passUnretained(result)

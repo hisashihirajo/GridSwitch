@@ -18,5 +18,7 @@
   <true/>
   <key>NSHighResolutionCapable</key>
   <true/>
+  <key>NSAppleEventsUsageDescription</key>
+  <string>GridSwitchはアプリ切り替えのためにキーボード入力を監視します。</string>
 </dict>
 </plist>

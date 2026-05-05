@@ -47,11 +47,18 @@ fi
 
 echo "  → バンドル構築完了"
 
-# 3. コード署名（ad-hoc署名）
+# 3. コード署名（開発者証明書で署名 — アクセシビリティ権限の永続化に必要）
 echo ""
 echo "[3/4] コード署名中..."
-codesign --force --sign - --deep "$APP_BUNDLE"
-echo "  → 署名完了"
+SIGN_IDENTITY="GridSwitch Developer"
+codesign --force --sign "$SIGN_IDENTITY" --identifier "com.local.GridSwitch" --entitlements "$PROJECT_DIR/Resources/GridSwitch.entitlements" --deep "$APP_BUNDLE"
+
+# 署名検証: ad-hoc署名だとInput Monitoring権限が無効化される
+if codesign -d --verbose=0 "$APP_BUNDLE" 2>&1 | grep -q "adhoc"; then
+  echo "  ❌ エラー: ad-hoc署名です。証明書 '$SIGN_IDENTITY' が見つかりません"
+  exit 1
+fi
+echo "  → 署名完了 (identity: $SIGN_IDENTITY)"
 
 # 4. 完了
 echo ""
