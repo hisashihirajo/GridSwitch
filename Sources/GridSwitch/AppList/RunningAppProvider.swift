@@ -24,10 +24,27 @@ class RunningAppProvider {
 
   // 現在アクティブなアプリを先頭にしたリストを返す
   func appsWithActiveFirst() -> [AppInfo] {
-    let activeApp = NSWorkspace.shared.frontmostApplication
+    return Self.sortWithActiveFirst(
+      apps: apps,
+      activePid: NSWorkspace.shared.frontmostApplication?.processIdentifier
+    )
+  }
+
+  // MRU順（最近使った順）でアプリリストを返す
+  func appsWithMruOrder() -> [AppInfo] {
+    return Self.orderByMru(
+      apps: apps,
+      mruOrder: Settings.shared.appMruOrder,
+      hidden: Settings.shared.hiddenApps,
+      activePid: NSWorkspace.shared.frontmostApplication?.processIdentifier
+    )
+  }
+
+  // アクティブアプリを先頭にする純粋ロジック
+  static func sortWithActiveFirst(apps: [AppInfo], activePid: pid_t?) -> [AppInfo] {
     var sorted = apps
-    if let activePid = activeApp?.processIdentifier,
-      let index = sorted.firstIndex(where: { $0.pid == activePid })
+    if let activePid,
+       let index = sorted.firstIndex(where: { $0.pid == activePid })
     {
       let active = sorted.remove(at: index)
       sorted.insert(active, at: 0)
@@ -35,17 +52,19 @@ class RunningAppProvider {
     return sorted
   }
 
-  // MRU順（最近使った順）でアプリリストを返す
-  func appsWithMruOrder() -> [AppInfo] {
-    let mruOrder = Settings.shared.appMruOrder
-    let activeApp = NSWorkspace.shared.frontmostApplication
-
+  // 非表示除外 + MRU順 + アクティブ先頭の純粋ロジック
+  static func orderByMru(
+    apps: [AppInfo],
+    mruOrder: [String],
+    hidden: [String],
+    activePid: pid_t?
+  ) -> [AppInfo] {
     var ordered: [AppInfo] = []
     var remaining = apps
 
     // 非表示アプリを除外
-    let hidden = Settings.shared.hiddenApps
-    remaining.removeAll { hidden.contains($0.mruKey) }
+    let hiddenSet = Set(hidden)
+    remaining.removeAll { hiddenSet.contains($0.mruKey) }
 
     // MRU順に並べる（mruKeyで同一bundleIdのPWAアプリも区別）
     for key in mruOrder {
@@ -58,8 +77,8 @@ class RunningAppProvider {
     ordered.append(contentsOf: remaining)
 
     // アクティブアプリを先頭に
-    if let activePid = activeApp?.processIdentifier,
-      let index = ordered.firstIndex(where: { $0.pid == activePid })
+    if let activePid,
+       let index = ordered.firstIndex(where: { $0.pid == activePid })
     {
       let active = ordered.remove(at: index)
       ordered.insert(active, at: 0)

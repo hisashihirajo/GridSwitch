@@ -107,11 +107,23 @@ class AppSwitcherManager {
 
     // AppInfo.from()で解決済みの名前を使う（開発中Electronアプリ対応）
     guard let appInfo = AppInfo.from(app) else { return }
-    let mruKey = appInfo.mruKey
-    var order = Settings.shared.appMruOrder
+    Settings.shared.appMruOrder = Self.movedToFront(
+      mruKey: appInfo.mruKey,
+      in: Settings.shared.appMruOrder
+    )
+  }
+
+  // mruKey をMRU先頭に移動する純粋ロジック（重複は除去）
+  static func movedToFront(mruKey: String, in current: [String]) -> [String] {
+    var order = current
     order.removeAll { $0 == mruKey }
     order.insert(mruKey, at: 0)
-    Settings.shared.appMruOrder = order
+    return order
+  }
+
+  // 数字キー → アプリインデックス変換（1→0, 2→1, ..., 9→8, 0→9）
+  static func indexForNumberKey(_ number: Int) -> Int {
+    return number == 0 ? 9 : number - 1
   }
 
   private func showSwitcher() {
@@ -130,8 +142,7 @@ class AppSwitcherManager {
 
   // 数字キーで直接アプリ切り替え（1→0番目、2→1番目、...、9→8番目、0→9番目）
   private func activateAppByNumber(_ number: Int) {
-    let index = number == 0 ? 9 : number - 1
-    panel.selectIndex(index)
+    panel.selectIndex(Self.indexForNumberKey(number))
     eventHandler.deactivateSwitcher()
     activateSelectedApp()
   }

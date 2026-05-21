@@ -4,7 +4,7 @@ import AppKit
 class Settings {
   static let shared = Settings()
 
-  private let defaults = UserDefaults.standard
+  private let defaults: UserDefaults
 
   // キー
   private enum Key: String {
@@ -22,7 +22,8 @@ class Settings {
     case showNumberShortcuts
   }
 
-  private init() {
+  init(defaults: UserDefaults = .standard) {
+    self.defaults = defaults
     registerDefaults()
   }
 

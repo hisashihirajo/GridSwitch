@@ -4,7 +4,7 @@ SIGN_IDENTITY = GridSwitch Developer
 BUNDLE_ID = com.local.GridSwitch
 
 # デフォルト: ビルド＋署名
-.PHONY: build run clean release
+.PHONY: build run test clean release
 
 build:
 	swift build
@@ -33,6 +33,9 @@ run: build
 		echo "   その後: システム設定 > プライバシーとセキュリティ > 入力監視 で再許可"; \
 	fi
 	@echo "起動完了（ログ: /tmp/gridswitch.log）"
+
+test:
+	swift test
 
 clean:
 	swift package clean

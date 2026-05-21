@@ -21,5 +21,10 @@ let package = Package(
         .linkedFramework("ApplicationServices"),
       ]
     ),
+    .testTarget(
+      name: "GridSwitchTests",
+      dependencies: ["GridSwitch"],
+      path: "Tests/GridSwitchTests"
+    ),
   ]
 )
