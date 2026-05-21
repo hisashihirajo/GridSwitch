@@ -2,6 +2,7 @@
 .build
 /build
 /Packages
+.claude/
 Resources/AppIcon.iconset/
 xcuserdata/
 DerivedData/
