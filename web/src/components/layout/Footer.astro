@@ -2,9 +2,10 @@
 import { t, type Lang } from '../../data/i18n';
 
 interface Props { lang?: Lang; }
-const { lang = 'en' } = Astro.props;
+const { lang = 'ja' } = Astro.props;
 const s = t[lang];
-const manualHref = lang === 'ja' ? '/ja/manual' : '/manual';
+const manualHref = lang === 'en' ? '/en/manual' : '/manual';
+const blogHref = lang === 'en' ? '/en/blog' : '/blog';
 ---
 
 <footer class="border-t border-border py-12 mt-32">
@@ -18,7 +19,7 @@ const manualHref = lang === 'ja' ? '/ja/manual' : '/manual';
       <div class="flex items-center gap-8">
         <a href="#features" class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.features}</a>
         <a href="#download" class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.download}</a>
-        <a href="/blog" class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.blog}</a>
+        <a href={blogHref} class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.blog}</a>
         <a href={manualHref} class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.manual}</a>
         <a href="https://github.com" class="text-sm text-text-secondary hover:text-text-primary transition-colors">GitHub</a>
       </div>

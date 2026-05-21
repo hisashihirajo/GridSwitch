@@ -6,7 +6,7 @@ import Footer from '../../../components/layout/Footer.astro';
 import { getCollection, render } from 'astro:content';
 
 export async function getStaticPaths() {
-  const posts = await getCollection('blog-ja');
+  const posts = await getCollection('blog');
   return posts.map((post) => ({
     params: { slug: post.id },
     props: post,
@@ -17,15 +17,15 @@ const post = Astro.props;
 const { Content } = await render(post);
 ---
 
-<BaseLayout title={`${post.data.title} - GridSwitch ブログ`} description={post.data.description}>
-  <Header lang="ja" />
+<BaseLayout title={`${post.data.title} - GridSwitch Blog`} description={post.data.description} lang="en">
+  <Header lang="en" />
   <main class="pt-32 pb-24">
     <article class="max-w-3xl mx-auto px-6">
       <div class="mb-10">
-        <a href="/ja/blog" class="text-sm text-accent hover:underline mb-4 inline-block">&larr; ブログに戻る</a>
+        <a href="/en/blog" class="text-sm text-accent hover:underline mb-4 inline-block">&larr; Back to blog</a>
         <h1 class="text-3xl md:text-5xl font-bold mb-4">{post.data.title}</h1>
         <time class="text-sm text-text-secondary">
-          {post.data.pubDate.toLocaleDateString('ja-JP', {
+          {post.data.pubDate.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
@@ -50,5 +50,5 @@ const { Content } = await render(post);
       </div>
     </article>
   </main>
-  <Footer lang="ja" />
+  <Footer lang="en" />
 </BaseLayout>

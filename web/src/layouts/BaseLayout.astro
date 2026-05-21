@@ -1,21 +1,25 @@
 ---
+import type { Lang } from '../data/i18n';
+
 interface Props {
   title: string;
   description?: string;
   ogImage?: string;
+  lang?: Lang;
 }
 
 const {
   title,
-  description = 'A grid-based application switcher for macOS. Replace Cmd+Tab with a visual grid that shows all your running apps at a glance.',
+  description = 'macOS向けのグリッド型アプリスイッチャー。Cmd+Tabを起動中のすべてのアプリを一覧表示するビジュアルなグリッドに置き換えます。',
   ogImage = '/og-image.png',
+  lang = 'ja',
 } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

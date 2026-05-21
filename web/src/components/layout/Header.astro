@@ -2,13 +2,13 @@
 import { t, type Lang } from '../../data/i18n';
 
 interface Props { lang?: Lang; }
-const { lang = 'en' } = Astro.props;
+const { lang = 'ja' } = Astro.props;
 const s = t[lang];
-const homeHref = lang === 'ja' ? '/ja' : '/';
-const manualHref = lang === 'ja' ? '/ja/manual' : '/manual';
-const blogHref = lang === 'ja' ? '/ja/blog' : '/blog';
-const featuresHref = lang === 'ja' ? '/ja#features' : '/#features';
-const downloadHref = lang === 'ja' ? '/ja#download' : '/#download';
+const homeHref = lang === 'en' ? '/en' : '/';
+const manualHref = lang === 'en' ? '/en/manual' : '/manual';
+const blogHref = lang === 'en' ? '/en/blog' : '/blog';
+const featuresHref = lang === 'en' ? '/en#features' : '/#features';
+const downloadHref = lang === 'en' ? '/en#download' : '/#download';
 ---
 
 <header id="header" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
@@ -36,8 +36,8 @@ const downloadHref = lang === 'ja' ? '/ja#download' : '/#download';
           </svg>
         </button>
         <div id="lang-dropdown" class="hidden absolute right-0 top-full mt-2 w-32 py-1 rounded-lg bg-bg-card border border-border shadow-xl">
-          <a href="/" class={`block px-4 py-2 text-sm hover:bg-bg-card-hover transition-colors ${lang === 'en' ? 'text-text-primary' : 'text-text-secondary'}`}>English</a>
-          <a href="/ja" class={`block px-4 py-2 text-sm hover:bg-bg-card-hover transition-colors ${lang === 'ja' ? 'text-text-primary' : 'text-text-secondary'}`}>日本語</a>
+          <a href="/" class={`block px-4 py-2 text-sm hover:bg-bg-card-hover transition-colors ${lang === 'ja' ? 'text-text-primary' : 'text-text-secondary'}`}>日本語</a>
+          <a href="/en" class={`block px-4 py-2 text-sm hover:bg-bg-card-hover transition-colors ${lang === 'en' ? 'text-text-primary' : 'text-text-secondary'}`}>English</a>
         </div>
       </div>
     </div>
@@ -58,9 +58,9 @@ const downloadHref = lang === 'ja' ? '/ja#download' : '/#download';
       <a href={blogHref} class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.blog}</a>
       <a href={manualHref} class="text-sm text-text-secondary hover:text-text-primary transition-colors">{s.manual}</a>
       <div class="flex items-center gap-3 pt-2 border-t border-border">
-        <a href="/" class={`text-sm ${lang === 'en' ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary transition-colors'}`}>English</a>
+        <a href="/" class={`text-sm ${lang === 'ja' ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary transition-colors'}`}>日本語</a>
         <span class="text-text-secondary">|</span>
-        <a href="/ja" class={`text-sm ${lang === 'ja' ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary transition-colors'}`}>日本語</a>
+        <a href="/en" class={`text-sm ${lang === 'en' ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary transition-colors'}`}>English</a>
       </div>
     </div>
   </div>
