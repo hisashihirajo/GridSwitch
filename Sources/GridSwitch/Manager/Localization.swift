@@ -51,8 +51,8 @@ enum L10n {
   // About
   static var aboutDescription: String {
     current == .ja
-      ? "グリッド型アプリケーションスイッチャー v1.2"
-      : "Grid Application Switcher v1.2"
+      ? "グリッド型アプリケーションスイッチャー v1.3"
+      : "Grid Application Switcher v1.3"
   }
 
   // アップデート
@@ -68,6 +68,19 @@ enum L10n {
   static var noUpdateAvailable: String { current == .ja ? "最新バージョンです" : "You're up to date" }
   static var downloading: String { current == .ja ? "ダウンロード中..." : "Downloading..." }
   static var updateFailed: String { current == .ja ? "アップデートに失敗しました" : "Update failed" }
+
+  // セキュア入力スタック
+  static var secureInputMenuItem: String {
+    current == .ja ? "⚠️ セキュア入力が有効（Cmd+Tab無効）" : "⚠️ Secure Input active (Cmd+Tab disabled)"
+  }
+  static var secureInputTitle: String {
+    current == .ja ? "Cmd+Tab が一時的に無効です" : "Cmd+Tab is temporarily disabled"
+  }
+  static var secureInputMessage: String {
+    current == .ja
+      ? "macOSの「セキュアキー入力」が有効なため、Cmd+Tab スイッチャーが反応しません。\n\nこれはパスワードマネージャ等の別アプリが原因で、GridSwitch の不具合や権限の問題ではありません。\n\nログアウトして再ログイン、またはMacを再起動すると解消します。"
+      : "macOS \"Secure Input\" is active, so the Cmd+Tab switcher won't respond.\n\nThis is caused by another app (e.g. a password manager), not a GridSwitch bug or a permissions issue.\n\nLog out and back in, or restart your Mac, to resolve it."
+  }
 
   // アクセシビリティ
   static var accessibilityRequired: String {
