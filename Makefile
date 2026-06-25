@@ -1,6 +1,9 @@
 APP_NAME = GridSwitch
 EXECUTABLE = .build/arm64-apple-macosx/debug/$(APP_NAME)
-SIGN_IDENTITY = GridSwitch Developer
+# Developer ID 証明書で署名する。自己署名と違い Designated Requirement が
+# Team ID ベースで安定するため、再ビルドしても TCC（アクセシビリティ/入力監視）
+# 権限が剥がれない。
+SIGN_IDENTITY = Developer ID Application: LIFE SCAPE, K.K. (LA555PK2S7)
 BUNDLE_ID = com.local.GridSwitch
 
 # デフォルト: ビルド＋署名
@@ -8,7 +11,7 @@ BUNDLE_ID = com.local.GridSwitch
 
 build:
 	swift build
-	@codesign --force --sign "$(SIGN_IDENTITY)" --identifier "$(BUNDLE_ID)" --entitlements Resources/GridSwitch.entitlements "$(EXECUTABLE)" 2>/dev/null
+	@codesign --force --options runtime --sign "$(SIGN_IDENTITY)" --identifier "$(BUNDLE_ID)" --entitlements Resources/GridSwitch.entitlements "$(EXECUTABLE)" 2>/dev/null
 	@# 署名検証: ad-hoc署名だとInput Monitoring権限が無効化される
 	@if codesign -d --verbose=0 "$(EXECUTABLE)" 2>&1 | grep -q "adhoc"; then \
 		echo "❌ エラー: ad-hoc署名です。証明書 '$(SIGN_IDENTITY)' が見つかりません"; \
