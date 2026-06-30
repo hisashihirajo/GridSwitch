@@ -14,3 +14,6 @@ DerivedData/
 web/node_modules/
 web/dist/
 web/.astro/
+
+# 署名・公証の平文資格情報（絶対にコミットしない）
+GridSwitch-release-credentials.txt
