@@ -10,6 +10,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   // セキュア入力スタック検知
   private let secureInputMonitor = SecureInputMonitor()
   private var isSecureInputStuck = false
+  // セキュア入力を握っている原因アプリ名（特定できなければ nil）
+  private var secureInputCulpritAppName: String?
+
+  // 生バイナリ実行（.appバンドル外。make run 等）では UNUserNotificationCenter が
+  // bundleProxyForCurrentProcess is nil でクラッシュするため、通知機能は .app 実行時のみ有効化する。
+  // メニューバーの⚠️警告は通知に依存しないので、通知無効時も引き続き機能する。
+  private var canUseUserNotifications: Bool {
+    Bundle.main.bundleURL.pathExtension == "app"
+  }
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     NSLog("[GridSwitch] applicationDidFinishLaunching")
@@ -20,9 +29,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     setupSecureInputMonitor()
 
-    // バックグラウンドでアップデートチェック
-    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-      UpdateChecker.shared.checkForUpdatesInBackground()
+    // バックグラウンドでアップデートチェック（.appバンドル実行時のみ）。
+    // 生バイナリ実行（make run）では currentVersion="0.0.0" で常に更新ありと誤判定し、
+    // relaunch(open .build/...)失敗→terminate で自滅するため無効化する。
+    if canUseUserNotifications {
+      DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+        UpdateChecker.shared.checkForUpdatesInBackground()
+      }
+    } else {
+      NSLog("[GridSwitch] .appバンドル外実行のため自動更新チェックを無効化")
     }
 
     // 言語変更時にメニューを再構築
@@ -42,24 +57,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   // セキュア入力スタックの監視を開始し、検知時に通知＋メニューバー警告を出す
   private func setupSecureInputMonitor() {
     // 通知許可をリクエスト（拒否されてもメニューバー警告は機能する）
-    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+    if canUseUserNotifications {
+      UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+    } else {
+      NSLog("[GridSwitch] .appバンドル外実行のため通知機能を無効化（メニューバー⚠️警告のみ動作）")
+    }
 
-    secureInputMonitor.onStuckChanged = { [weak self] stuck in
+    secureInputMonitor.onStuckChanged = { [weak self] stuck, appName in
       self?.isSecureInputStuck = stuck
+      self?.secureInputCulpritAppName = appName
       self?.updateMenuBarIconForSecureInput(stuck)
       self?.rebuildMenu()
       if stuck {
-        self?.postSecureInputNotification()
+        self?.postSecureInputNotification(appName: appName)
       }
     }
     secureInputMonitor.start()
   }
 
   // セキュア入力スタックを通知バナーで知らせる
-  private func postSecureInputNotification() {
+  private func postSecureInputNotification(appName: String?) {
+    guard canUseUserNotifications else { return }
     let content = UNMutableNotificationContent()
     content.title = L10n.secureInputTitle
-    content.body = L10n.secureInputMessage
+    content.body = L10n.secureInputMessage(appName: appName)
     let request = UNNotificationRequest(
       identifier: "secure-input-stuck",
       content: content,
@@ -92,7 +113,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // セキュア入力スタック時は最上部に警告項目を出す
     if isSecureInputStuck {
       let warningItem = NSMenuItem(
-        title: L10n.secureInputMenuItem,
+        title: L10n.secureInputMenuItem(appName: secureInputCulpritAppName),
         action: #selector(showSecureInputInfo),
         keyEquivalent: ""
       )
@@ -144,7 +165,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   @objc private func showSecureInputInfo() {
     let alert = NSAlert()
     alert.messageText = L10n.secureInputTitle
-    alert.informativeText = L10n.secureInputMessage
+    alert.informativeText = L10n.secureInputMessage(appName: secureInputCulpritAppName)
     alert.alertStyle = .warning
     alert.runModal()
   }

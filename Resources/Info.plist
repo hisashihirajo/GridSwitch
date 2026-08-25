@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>CFBundleIdentifier</key>
-  <string>com.local.GridSwitch</string>
+  <string>jp.lifescape.gridswitch</string>
   <key>CFBundleName</key>
   <string>GridSwitch</string>
   <key>CFBundleExecutable</key>

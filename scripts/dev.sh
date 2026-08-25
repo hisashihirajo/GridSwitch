@@ -9,7 +9,7 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 APP_NAME="GridSwitch"
 EXECUTABLE="$PROJECT_DIR/.build/arm64-apple-macosx/debug/$APP_NAME"
 SIGN_IDENTITY="GridSwitch Developer"
-BUNDLE_ID="com.local.GridSwitch"
+BUNDLE_ID="jp.lifescape.gridswitch"
 
 cd "$PROJECT_DIR"
 

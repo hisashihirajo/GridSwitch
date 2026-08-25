@@ -51,7 +51,7 @@ echo "  → バンドル構築完了"
 echo ""
 echo "[3/4] コード署名中..."
 SIGN_IDENTITY="Developer ID Application: LIFE SCAPE, K.K. (LA555PK2S7)"
-codesign --force --options runtime --sign "$SIGN_IDENTITY" --identifier "com.local.GridSwitch" --entitlements "$PROJECT_DIR/Resources/GridSwitch.entitlements" --deep "$APP_BUNDLE"
+codesign --force --options runtime --sign "$SIGN_IDENTITY" --identifier "jp.lifescape.gridswitch" --entitlements "$PROJECT_DIR/Resources/GridSwitch.entitlements" --deep "$APP_BUNDLE"
 
 # 署名検証: ad-hoc署名だとInput Monitoring権限が無効化される
 if codesign -d --verbose=0 "$APP_BUNDLE" 2>&1 | grep -q "adhoc"; then

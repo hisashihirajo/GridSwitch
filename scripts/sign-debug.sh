@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 APP_NAME="GridSwitch"
 EXECUTABLE="$PROJECT_DIR/.build/arm64-apple-macosx/debug/$APP_NAME"
-SIGN_IDENTITY="GridSwitch Developer"
+SIGN_IDENTITY="Developer ID Application: LIFE SCAPE, K.K. (LA555PK2S7)"
 BUNDLE_ID="com.local.GridSwitch"
 
 if [ ! -f "$EXECUTABLE" ]; then
@@ -18,6 +18,6 @@ if [ ! -f "$EXECUTABLE" ]; then
 fi
 
 echo "署名中: $EXECUTABLE"
-codesign --force --sign "$SIGN_IDENTITY" --identifier "$BUNDLE_ID" "$EXECUTABLE"
+codesign --force --options runtime --sign "$SIGN_IDENTITY" --identifier "$BUNDLE_ID" --entitlements "$PROJECT_DIR/Resources/GridSwitch.entitlements" "$EXECUTABLE"
 echo "署名完了"
 codesign -dvv "$EXECUTABLE" 2>&1 | grep -E "Identifier|Authority|TeamIdentifier"

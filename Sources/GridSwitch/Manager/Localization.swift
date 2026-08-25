@@ -70,14 +70,28 @@ enum L10n {
   static var updateFailed: String { current == .ja ? "アップデートに失敗しました" : "Update failed" }
 
   // セキュア入力スタック
-  static var secureInputMenuItem: String {
-    current == .ja ? "⚠️ セキュア入力が有効（Cmd+Tab無効）" : "⚠️ Secure Input active (Cmd+Tab disabled)"
+  // 原因アプリ名が特定できた場合はメニュー項目にも表示する（例:「⚠️ セキュア入力が有効（原因: Microsoft Word）」）
+  static func secureInputMenuItem(appName: String?) -> String {
+    if let appName = appName {
+      return current == .ja
+        ? "⚠️ セキュア入力が有効・原因: \(appName)（Cmd+Tab無効）"
+        : "⚠️ Secure Input active · \(appName) (Cmd+Tab disabled)"
+    }
+    return current == .ja
+      ? "⚠️ セキュア入力が有効（Cmd+Tab無効）"
+      : "⚠️ Secure Input active (Cmd+Tab disabled)"
   }
   static var secureInputTitle: String {
     current == .ja ? "Cmd+Tab が一時的に無効です" : "Cmd+Tab is temporarily disabled"
   }
-  static var secureInputMessage: String {
-    current == .ja
+  // 原因アプリ名が特定できた場合は、そのアプリを名指しして軽い対処（入力欄を閉じる/そのアプリを終了）を先に案内する。
+  static func secureInputMessage(appName: String?) -> String {
+    if let appName = appName {
+      return current == .ja
+        ? "macOSの「セキュアキー入力」が有効なため、Cmd+Tab スイッチャーが反応しません。\n\n原因のアプリ: \(appName)\n\n「\(appName)」のパスワード入力欄を閉じるか、そのアプリを終了すると解消します。それでも直らない場合はログアウトして再ログイン、またはMacを再起動してください。\n\nGridSwitch の不具合や権限の問題ではありません。"
+        : "macOS \"Secure Input\" is active, so the Cmd+Tab switcher won't respond.\n\nApp holding Secure Input: \(appName)\n\nClose the password field in \"\(appName)\" or quit that app to resolve it. If it persists, log out and back in, or restart your Mac.\n\nThis is not a GridSwitch bug or a permissions issue."
+    }
+    return current == .ja
       ? "macOSの「セキュアキー入力」が有効なため、Cmd+Tab スイッチャーが反応しません。\n\nこれはパスワードマネージャ等の別アプリが原因で、GridSwitch の不具合や権限の問題ではありません。\n\nログアウトして再ログイン、またはMacを再起動すると解消します。"
       : "macOS \"Secure Input\" is active, so the Cmd+Tab switcher won't respond.\n\nThis is caused by another app (e.g. a password manager), not a GridSwitch bug or a permissions issue.\n\nLog out and back in, or restart your Mac, to resolve it."
   }
