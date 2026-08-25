@@ -7,6 +7,11 @@ class SwitcherPanel: NSPanel {
   private let backgroundOverlay = NSView()
   private let backgroundImageView = NSView()
 
+  // パネル表示中のマウス移動監視。
+  // スイッチャーはアプリが非アクティブなまま表示されるため、通常の mouseMoved は
+  // アプリに配送されない。グローバルモニタで拾ってホバー選択に反映する。
+  private var mouseMoveMonitor: Any?
+
   init() {
     super.init(
       contentRect: NSRect(x: 0, y: 0, width: 400, height: 400),
@@ -71,6 +76,9 @@ class SwitcherPanel: NSPanel {
     // 設定から背景を適用
     applyBackgroundSettings()
 
+    // 表示直後はホバー選択を抑制（カーソルが動いてから追従を開始）
+    gridViewController.beginHoverTracking()
+
     // フェードインアニメーション
     alphaValue = 0
     orderFrontRegardless()
@@ -78,6 +86,37 @@ class SwitcherPanel: NSPanel {
     NSAnimationContext.runAnimationGroup { context in
       context.duration = 0.15
       self.animator().alphaValue = 1
+    }
+
+    startMouseMoveMonitor()
+  }
+
+  // マウス移動を監視してホバー選択に反映する
+  private func startMouseMoveMonitor() {
+    stopMouseMoveMonitor()
+    // マウスユーティリティの不具合でボタンが押しっぱなしになると、移動が mouseMoved ではなく
+    // ドラッグとして流れてくる。その状態でもホバー追従できるようドラッグも監視する。
+    mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(
+      matching: [.mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged]
+    ) { [weak self] _ in
+      self?.handleMouseMovedOnScreen(NSEvent.mouseLocation)
+    }
+  }
+
+  private func stopMouseMoveMonitor() {
+    if let monitor = mouseMoveMonitor {
+      NSEvent.removeMonitor(monitor)
+      mouseMoveMonitor = nil
+    }
+  }
+
+  // スクリーン座標のマウス位置からセルを特定してホバー選択
+  private func handleMouseMovedOnScreen(_ screenPoint: NSPoint) {
+    guard isVisible, let contentView = self.contentView else { return }
+    let windowPoint = convertPoint(fromScreen: screenPoint)
+    let localPoint = contentView.convert(windowPoint, from: nil)
+    if let index = gridViewController.indexOfCell(at: localPoint) {
+      gridViewController.hoverSelect(index)
     }
   }
 
@@ -87,6 +126,7 @@ class SwitcherPanel: NSPanel {
   }
 
   func dismiss() {
+    stopMouseMoveMonitor()
     NSAnimationContext.runAnimationGroup(
       { context in
         context.duration = 0.1
@@ -165,12 +205,12 @@ class SwitcherPanel: NSPanel {
     gridViewController.view.frame = effectView.bounds
   }
 
-  // マウス移動時にセルのハイライトを追従
+  // マウス移動時にセルのハイライトを追従（アプリがアクティブな場合の経路）
   private func handleMouseMoved(at point: NSPoint) {
     guard let contentView = self.contentView else { return }
     let localPoint = contentView.convert(point, from: nil)
     if let index = gridViewController.indexOfCell(at: localPoint) {
-      gridViewController.selectIndex(index)
+      gridViewController.hoverSelect(index)
     }
   }
 

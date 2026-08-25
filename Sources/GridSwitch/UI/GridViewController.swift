@@ -6,6 +6,10 @@ class GridViewController: NSViewController {
   private var cells: [AppIconCell] = []
   private(set) var selectedIndex: Int = 0
 
+  // パネル表示時のマウス位置。実際にマウスが動くまではホバー選択を無視するための基準点。
+  // （カーソルの真下にパネルが出ただけでキーボードの初期選択が奪われるのを防ぐ）
+  private var hoverAnchor: NSPoint?
+
   override func loadView() {
     view = NSView()
   }
@@ -93,6 +97,24 @@ class GridViewController: NSViewController {
     return apps
   }
 
+  // パネル表示時に呼ぶ。この時点のマウス位置を基準にし、
+  // カーソルが実際に動くまではホバーによる選択変更を抑制する。
+  func beginHoverTracking() {
+    hoverAnchor = NSEvent.mouseLocation
+  }
+
+  // ホバーによる選択。カーソルが動く前のイベントは無視する。
+  func hoverSelect(_ index: Int) {
+    if let anchor = hoverAnchor {
+      let current = NSEvent.mouseLocation
+      let moved = abs(current.x - anchor.x) > 2 || abs(current.y - anchor.y) > 2
+      guard moved else { return }
+      hoverAnchor = nil
+    }
+    guard index != selectedIndex else { return }
+    selectIndex(index)
+  }
+
   // 座標からセルのインデックスを返す
   func indexOfCell(at point: NSPoint) -> Int? {
     for (index, cell) in cells.enumerated() {
@@ -134,6 +156,9 @@ class GridViewController: NSViewController {
       let shortcutNumber: Int? = Settings.shared.showNumberShortcuts && index < 10 ? (index + 1) % 10 : nil
       cell.configure(with: app, shortcutNumber: shortcutNumber)
       cell.isHighlighted = (index == selectedIndex)
+      cell.onHover = { [weak self] in
+        self?.hoverSelect(index)
+      }
 
       view.addSubview(cell)
       cells.append(cell)

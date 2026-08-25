@@ -15,6 +15,11 @@ class AppIconCell: NSView {
     }
   }
 
+  // マウスがこのセルに乗ったときに呼ばれる
+  var onHover: (() -> Void)?
+
+  private var hoverTrackingArea: NSTrackingArea?
+
   override init(frame frameRect: NSRect) {
     super.init(frame: frameRect)
     setup()
@@ -70,6 +75,33 @@ class AppIconCell: NSView {
     notificationBadge.drawsBackground = false
     notificationBadge.isHidden = true
     addSubview(notificationBadge)
+  }
+
+  // マウスホバー追従用のトラッキングエリア。
+  // スイッチャーは非アクティブなパネル（.nonactivatingPanel）上に出るため、
+  // 通常の mouseMoved はアプリに配送されない。.activeAlways のトラッキングエリアなら
+  // アプリが非アクティブでも mouseEntered / mouseMoved を受け取れる。
+  override func updateTrackingAreas() {
+    super.updateTrackingAreas()
+    if let area = hoverTrackingArea {
+      removeTrackingArea(area)
+    }
+    let area = NSTrackingArea(
+      rect: .zero,
+      options: [.mouseEnteredAndExited, .mouseMoved, .activeAlways, .inVisibleRect],
+      owner: self,
+      userInfo: nil
+    )
+    addTrackingArea(area)
+    hoverTrackingArea = area
+  }
+
+  override func mouseEntered(with event: NSEvent) {
+    onHover?()
+  }
+
+  override func mouseMoved(with event: NSEvent) {
+    onHover?()
   }
 
   override func viewDidMoveToWindow() {

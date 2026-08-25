@@ -7,7 +7,7 @@ class Settings {
   private let defaults: UserDefaults
 
   // キー
-  private enum Key: String {
+  private enum Key: String, CaseIterable {
     case iconSize
     case backgroundColorR
     case backgroundColorG
@@ -22,9 +22,36 @@ class Settings {
     case showNumberShortcuts
   }
 
+  // 旧バンドルID時代（com.local.GridSwitch）の設定を引き継ぐための情報。
+  // リリース用に jp.lifescape.gridswitch へ変更した際、UserDefaults のドメインが変わり
+  // 設定が初期化されたように見えるため、初回起動時に一度だけコピーする。
+  private static let legacyDomain = "com.local.GridSwitch"
+  private static let currentDomain = "jp.lifescape.gridswitch"
+  private static let migrationKey = "didMigrateFromLegacyDomain"
+
   init(defaults: UserDefaults = .standard) {
     self.defaults = defaults
+    migrateLegacyDefaultsIfNeeded()
     registerDefaults()
+  }
+
+  private func migrateLegacyDefaultsIfNeeded() {
+    // 本体アプリ以外（テスト等）では移行しない
+    guard Bundle.main.bundleIdentifier == Settings.currentDomain else { return }
+    guard !defaults.bool(forKey: Settings.migrationKey) else { return }
+    defaults.set(true, forKey: Settings.migrationKey)
+
+    guard let legacy = UserDefaults(suiteName: Settings.legacyDomain) else { return }
+    var migrated = 0
+    for key in Key.allCases {
+      // 現ドメインに既に値がある場合はそちらを優先する
+      guard defaults.object(forKey: key.rawValue) == nil,
+        let value = legacy.object(forKey: key.rawValue)
+      else { continue }
+      defaults.set(value, forKey: key.rawValue)
+      migrated += 1
+    }
+    NSLog("[GridSwitch] 旧バンドルIDの設定を移行しました: %d件", migrated)
   }
 
   private func registerDefaults() {
