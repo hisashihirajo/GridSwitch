@@ -4,19 +4,29 @@ import Darwin
 import Foundation
 import IOKit
 
+// セキュア入力を保持しているプロセス。
+struct SecureInputCulprit {
+  let pid: pid_t
+  // 表示用の名前（例: 「Bitwarden（Safari拡張）」）
+  let displayName: String
+  let executablePath: String
+  // 既知のパスワードマネージャ由来か。終了させても実害が小さいものだけ
+  // ワンクリック解除の対象にする。
+  let isKnownPasswordManager: Bool
+}
+
 // セキュアキー入力(Secure Input Mode)の検知。
 //
 // secure input が有効な間、CGEventTap には keyDown が配送されない（修飾キーの
 // flagsChanged のみ流れる）。このため GridSwitch の Cmd+Tab が無反応になる。
 // これは macOS の仕様で、パスワードマネージャ等が secure input を有効化したまま
-// 解放し損ねると発生する。GridSwitch 側のバグでも署名/権限の問題でもなく、
-// アプリ側でイベントタップを使う以上は回避できない。
+// 解放し損ねると発生する。GridSwitch 側のバグでも署名/権限の問題でもない。
 //
 // 通常のパスワード入力でも secure input は一瞬有効になるため、誤通知を避ける目的で
 // 一定時間(stuckThreshold)継続して有効な場合のみ「スタック」とみなして通知する。
 //
-// スタック検知時は、原因アプリを IORegistry の kCGSSessionSecureInputPID から特定し、
-// アプリ名を通知に含める（例: 「原因のアプリ: Microsoft Word」）。
+// 保持元プロセスを終了させれば、ログアウトやMac再起動をしなくても解除できる
+// （2026-09-08 に Bitwarden の Safari 拡張で実証）。
 final class SecureInputMonitor {
   // スタック判定のしきい値（秒）。通常のパスワード入力は数秒で完了するため、
   // これを超えて継続している場合は解放漏れ（スタック）と判断する。
@@ -29,12 +39,12 @@ final class SecureInputMonitor {
   private var enabledSince: Date?
   private(set) var isStuck = false
 
-  // スタック検知時に特定した原因アプリ名（解決できなければ nil）
-  private(set) var culpritAppName: String?
+  // スタック検知時に特定した原因プロセス（解決できなければ nil）
+  private(set) var culprit: SecureInputCulprit?
 
   // スタック状態が変化したときにメインスレッドで呼ばれる。
-  // stuck=true のとき、第2引数に原因アプリ名（特定できなければ nil）を渡す。
-  var onStuckChanged: ((Bool, String?) -> Void)?
+  // stuck=true のとき、第2引数に原因プロセス（特定できなければ nil）を渡す。
+  var onStuckChanged: ((Bool, SecureInputCulprit?) -> Void)?
 
   // 監視開始（メインRunLoopで実行）
   func start() {
@@ -58,34 +68,84 @@ final class SecureInputMonitor {
       enabledSince = since
       if Date().timeIntervalSince(since) >= stuckThreshold && !isStuck {
         isStuck = true
-        culpritAppName = Self.secureInputCulpritName()
-        let culpritLog = culpritAppName ?? "特定不可"
-        NSLog("[GridSwitch] セキュア入力スタック検知: Cmd+Tabが無効化されています（原因: \(culpritLog)）")
-        onStuckChanged?(true, culpritAppName)
+        culprit = Self.currentCulprit()
+        NSLog(
+          "[GridSwitch] セキュア入力スタック検知: Cmd+Tabが無効化されています（原因: \(culprit?.displayName ?? "特定不可")）"
+        )
+        onStuckChanged?(true, culprit)
       }
     } else {
       enabledSince = nil
       if isStuck {
         isStuck = false
-        culpritAppName = nil
+        culprit = nil
         NSLog("[GridSwitch] セキュア入力スタック解消")
         onStuckChanged?(false, nil)
       }
     }
   }
 
-  // MARK: - 原因アプリの特定
+  // MARK: - 解除
 
-  // セキュア入力を保持しているアプリ名を返す（特定できなければ nil）。
-  static func secureInputCulpritName() -> String? {
-    guard let pid = secureInputCulpritPID() else { return nil }
-    return processDisplayName(forPID: pid)
+  // 原因プロセスを終了させる。終了できたら true。
+  // 生存確認のため待ちが入るので、バックグラウンドスレッドから呼ぶこと。
+  static func terminate(_ culprit: SecureInputCulprit) -> Bool {
+    NSLog("[GridSwitch] セキュア入力の保持元を終了します: \(culprit.displayName) (pid=\(culprit.pid))")
+
+    // まずはアプリとして行儀よく終了させる。
+    if let app = NSRunningApplication(processIdentifier: culprit.pid) {
+      app.terminate()
+      if waitUntilExited(pid: culprit.pid, timeout: 2) { return true }
+    }
+
+    // Safari拡張(appex)等はアプリとしての終了要求では落ちないため、シグナルを送る。
+    if kill(culprit.pid, SIGTERM) != 0 {
+      // 既に終了していれば目的は達成されている。
+      return executablePath(forPID: culprit.pid) == nil
+    }
+    return waitUntilExited(pid: culprit.pid, timeout: 3)
+  }
+
+  // 指定PIDのプロセスが終了するまで待つ。
+  private static func waitUntilExited(pid: pid_t, timeout: TimeInterval) -> Bool {
+    let deadline = Date().addingTimeInterval(timeout)
+    while Date() < deadline {
+      if executablePath(forPID: pid) == nil { return true }
+      Thread.sleep(forTimeInterval: 0.2)
+    }
+    return executablePath(forPID: pid) == nil
+  }
+
+  // セキュア入力が解除されるまで待つ。timeout 秒以内に解除されたら true。
+  // 呼び出し元スレッドをブロックするため、バックグラウンドから呼ぶこと。
+  static func waitUntilReleased(timeout: TimeInterval) -> Bool {
+    let deadline = Date().addingTimeInterval(timeout)
+    while Date() < deadline {
+      if !IsSecureEventInputEnabled() { return true }
+      Thread.sleep(forTimeInterval: 0.3)
+    }
+    return !IsSecureEventInputEnabled()
+  }
+
+  // MARK: - 原因プロセスの特定
+
+  // セキュア入力を保持しているプロセスを返す（特定できなければ nil）。
+  //
+  // IORegistry が持つ PID は当てにならない。保持していたプロセスが終了した後も
+  // 古い PID がそのまま残り続けることがある（2026-09-08、既に終了した Ultenix の
+  // PID が残り、実際の保持元は生きている Bitwarden の Safari 拡張だった）。
+  // そのため、PID が生きているときだけ採用し、駄目なら既知のパスワードマネージャを
+  // 実行中プロセスから探す。
+  static func currentCulprit() -> SecureInputCulprit? {
+    if let pid = secureInputPIDFromRegistry(), let path = executablePath(forPID: pid) {
+      return makeCulprit(pid: pid, path: path)
+    }
+    return findRunningPasswordManager()
   }
 
   // IORegistry の IOResources ノードが持つ IOConsoleUsers 配列から、
   // kCGSSessionSecureInputPID（セキュア入力を保持しているプロセスのPID）を読む。
-  // 保持プロセスが無い場合は PID=0 なので nil を返す。
-  private static func secureInputCulpritPID() -> pid_t? {
+  private static func secureInputPIDFromRegistry() -> pid_t? {
     let entry = IORegistryEntryFromPath(kIOMainPortDefault, "IOService:/IOResources")
     guard entry != MACH_PORT_NULL else { return nil }
     defer { IOObjectRelease(entry) }
@@ -105,22 +165,87 @@ final class SecureInputMonitor {
     return nil
   }
 
-  // PID から表示用のアプリ名を解決する。
-  // GUIアプリは NSRunningApplication で localizedName（例: 「Microsoft Word」）を取得。
-  // Safari拡張(appex)等で解決できない場合は実行ファイル名にフォールバックする。
-  private static func processDisplayName(forPID pid: pid_t) -> String? {
+  // セキュア入力を握ったまま解放し損ねる常習犯。実行ファイルのパスに含まれる語で判定する。
+  // Safari/Chrome 拡張のプロセスは実行ファイル名が "safari" 等になるため、パス全体で見る。
+  private static let passwordManagerKeywords = [
+    "bitwarden", "1password", "dashlane", "lastpass", "keeper", "enpass",
+    "nordpass", "roboform", "strongbox", "keepassxc", "proton pass", "protonpass",
+  ]
+
+  // 実行中プロセスから既知のパスワードマネージャを探す。
+  // ブラウザ拡張(appex)が原因であることが多いので、拡張を先に返す。
+  private static func findRunningPasswordManager() -> SecureInputCulprit? {
+    var candidates: [SecureInputCulprit] = []
+    for (pid, path) in runningProcesses() {
+      let lower = path.lowercased()
+      guard passwordManagerKeywords.contains(where: { lower.contains($0) }) else { continue }
+      candidates.append(makeCulprit(pid: pid, path: path))
+    }
+    // 拡張プロセス優先。次にPIDの新しい順（最後に起動したものが握っている可能性が高い）。
+    return candidates.sorted {
+      let a = $0.executablePath.lowercased().contains(".appex")
+      let b = $1.executablePath.lowercased().contains(".appex")
+      if a != b { return a }
+      return $0.pid > $1.pid
+    }.first
+  }
+
+  // 実行中の全プロセスの (PID, 実行ファイルパス) を返す。取得できないものは除く。
+  private static func runningProcesses() -> [(pid_t, String)] {
+    let bufferSize = proc_listpids(UInt32(PROC_ALL_PIDS), 0, nil, 0)
+    guard bufferSize > 0 else { return [] }
+    let count = Int(bufferSize) / MemoryLayout<pid_t>.size
+    var pids = [pid_t](repeating: 0, count: count)
+    let written = proc_listpids(UInt32(PROC_ALL_PIDS), 0, &pids, bufferSize)
+    guard written > 0 else { return [] }
+
+    var result: [(pid_t, String)] = []
+    for pid in pids where pid > 0 {
+      if let path = executablePath(forPID: pid) {
+        result.append((pid, path))
+      }
+    }
+    return result
+  }
+
+  // PID から実行ファイルのパスを返す。プロセスが存在しなければ nil。
+  // 生存確認も兼ねる（終了済みPIDでは必ず nil になる）。
+  private static func executablePath(forPID pid: pid_t) -> String? {
+    var buffer = [CChar](repeating: 0, count: Int(MAXPATHLEN))
+    let length = proc_pidpath(pid, &buffer, UInt32(buffer.count))
+    guard length > 0 else { return nil }
+    return String(cString: buffer)
+  }
+
+  private static func makeCulprit(pid: pid_t, path: String) -> SecureInputCulprit {
+    let lower = path.lowercased()
+    return SecureInputCulprit(
+      pid: pid,
+      displayName: displayName(forPID: pid, path: path),
+      executablePath: path,
+      isKnownPasswordManager: passwordManagerKeywords.contains(where: { lower.contains($0) })
+    )
+  }
+
+  // 表示用の名前を組み立てる。
+  // GUIアプリは NSRunningApplication の localizedName（例:「Microsoft Word」）。
+  // ブラウザ拡張(appex)は親アプリ名を拾って「Bitwarden（Safari拡張）」の形にする。
+  private static func displayName(forPID pid: pid_t, path: String) -> String {
+    // "/Applications/Bitwarden.app/Contents/PlugIns/safari.appex/Contents/MacOS/safari"
+    // のような拡張プロセスは、親アプリ本体と区別できるよう「（Safari拡張）」を付ける。
+    let components = (path as NSString).pathComponents
+    let isExtension = components.contains { $0.hasSuffix(".appex") }
+
     if let app = NSRunningApplication(processIdentifier: pid),
       let name = app.localizedName, !name.isEmpty
     {
-      return name
+      return isExtension ? L10n.browserExtensionName(appName: name) : name
     }
 
-    var pathBuffer = [CChar](repeating: 0, count: Int(MAXPATHLEN))
-    let length = proc_pidpath(pid, &pathBuffer, UInt32(pathBuffer.count))
-    if length > 0 {
-      let path = String(cString: pathBuffer)
-      return (path as NSString).lastPathComponent
+    if let parentApp = components.first(where: { $0.hasSuffix(".app") }) {
+      let name = (parentApp as NSString).deletingPathExtension
+      return isExtension ? L10n.browserExtensionName(appName: name) : name
     }
-    return nil
+    return (path as NSString).lastPathComponent
   }
 }

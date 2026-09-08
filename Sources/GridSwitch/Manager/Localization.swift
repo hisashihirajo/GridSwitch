@@ -70,7 +70,7 @@ enum L10n {
   static var updateFailed: String { current == .ja ? "アップデートに失敗しました" : "Update failed" }
 
   // セキュア入力スタック
-  // 原因アプリ名が特定できた場合はメニュー項目にも表示する（例:「⚠️ セキュア入力が有効（原因: Microsoft Word）」）
+  // 原因アプリ名が特定できた場合はメニュー項目にも表示する（例:「⚠️ セキュア入力が有効・原因: Bitwarden（Safari拡張）」）
   static func secureInputMenuItem(appName: String?) -> String {
     if let appName = appName {
       return current == .ja
@@ -81,19 +81,54 @@ enum L10n {
       ? "⚠️ セキュア入力が有効（Cmd+Tab無効）"
       : "⚠️ Secure Input active (Cmd+Tab disabled)"
   }
+
+  // ブラウザ拡張プロセスの表示名（例: 「Bitwarden（Safari拡張）」）
+  static func browserExtensionName(appName: String) -> String {
+    current == .ja ? "\(appName)（Safari拡張）" : "\(appName) (Safari extension)"
+  }
+
   static var secureInputTitle: String {
     current == .ja ? "Cmd+Tab が一時的に無効です" : "Cmd+Tab is temporarily disabled"
   }
-  // 原因アプリ名が特定できた場合は、そのアプリを名指しして軽い対処（入力欄を閉じる/そのアプリを終了）を先に案内する。
+
+  // 原因プロセスを特定できた場合は、それを終了すれば直ることを案内する。
+  // ログアウトやMac再起動は不要（保持元プロセスを終了させれば解除される）。
   static func secureInputMessage(appName: String?) -> String {
     if let appName = appName {
       return current == .ja
-        ? "macOSの「セキュアキー入力」が有効なため、Cmd+Tab スイッチャーが反応しません。\n\n原因のアプリ: \(appName)\n\n「\(appName)」のパスワード入力欄を閉じるか、そのアプリを終了すると解消します。それでも直らない場合はログアウトして再ログイン、またはMacを再起動してください。\n\nGridSwitch の不具合や権限の問題ではありません。"
-        : "macOS \"Secure Input\" is active, so the Cmd+Tab switcher won't respond.\n\nApp holding Secure Input: \(appName)\n\nClose the password field in \"\(appName)\" or quit that app to resolve it. If it persists, log out and back in, or restart your Mac.\n\nThis is not a GridSwitch bug or a permissions issue."
+        ? "macOSの「セキュアキー入力」が有効なため、Cmd+Tab スイッチャーが反応しません。\n\n原因のアプリ: \(appName)\n\n下のボタンでこのアプリを終了すると、その場で解除されます。Macの再起動もログアウトも必要ありません。終了したアプリは、次に必要になったときに自動で起動し直します。\n\nGridSwitch の不具合や権限の問題ではありません。"
+        : "macOS \"Secure Input\" is active, so the Cmd+Tab switcher won't respond.\n\nApp holding Secure Input: \(appName)\n\nQuitting that app with the button below releases it immediately. No logout or restart needed; the app relaunches on its own when it is next needed.\n\nThis is not a GridSwitch bug or a permissions issue."
     }
     return current == .ja
-      ? "macOSの「セキュアキー入力」が有効なため、Cmd+Tab スイッチャーが反応しません。\n\nこれはパスワードマネージャ等の別アプリが原因で、GridSwitch の不具合や権限の問題ではありません。\n\nログアウトして再ログイン、またはMacを再起動すると解消します。"
-      : "macOS \"Secure Input\" is active, so the Cmd+Tab switcher won't respond.\n\nThis is caused by another app (e.g. a password manager), not a GridSwitch bug or a permissions issue.\n\nLog out and back in, or restart your Mac, to resolve it."
+      ? "macOSの「セキュアキー入力」が有効なため、Cmd+Tab スイッチャーが反応しません。\n\nこれはパスワードマネージャ等の別アプリが原因で、GridSwitch の不具合や権限の問題ではありません。\n\n原因のアプリを特定できませんでした。パスワードマネージャ（Bitwarden・1Password 等）とそのブラウザ拡張を終了すると解除されます。それでも直らない場合はログアウトして再ログインしてください。"
+      : "macOS \"Secure Input\" is active, so the Cmd+Tab switcher won't respond.\n\nThis is caused by another app (e.g. a password manager), not a GridSwitch bug or a permissions issue.\n\nThe responsible app could not be identified. Quitting your password manager (Bitwarden, 1Password, etc.) and its browser extension releases it. If it persists, log out and back in."
+  }
+
+  // 解除ボタン（アラート）
+  static func secureInputQuitButton(appName: String) -> String {
+    current == .ja ? "\(appName) を終了して解除" : "Quit \(appName) and release"
+  }
+  // 解除ボタン（通知バナー。事前登録が必要なため固定文言）
+  static var secureInputResolveAction: String {
+    current == .ja ? "原因アプリを終了して解除" : "Quit the responsible app"
+  }
+  static var closeButton: String { current == .ja ? "閉じる" : "Close" }
+
+  static var secureInputResolvedTitle: String {
+    current == .ja ? "Cmd+Tab が使えるようになりました" : "Cmd+Tab is working again"
+  }
+  static func secureInputResolvedMessage(appName: String) -> String {
+    current == .ja
+      ? "\(appName) を終了し、セキュアキー入力を解除しました。"
+      : "Quit \(appName) and released Secure Input."
+  }
+  static var secureInputNotResolvedTitle: String {
+    current == .ja ? "解除できませんでした" : "Could not release Secure Input"
+  }
+  static var secureInputNotResolvedMessage: String {
+    current == .ja
+      ? "アプリを終了しましたが、セキュアキー入力が有効なままです。他のアプリも保持している可能性があります。\n\nパスワードマネージャとそのブラウザ拡張をすべて終了しても直らない場合は、ログアウトして再ログインしてください。"
+      : "The app was quit, but Secure Input is still active. Another app may also be holding it.\n\nIf quitting every password manager and its browser extension does not help, log out and back in."
   }
 
   // アクセシビリティ

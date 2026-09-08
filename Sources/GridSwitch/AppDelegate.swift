@@ -10,8 +10,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   // セキュア入力スタック検知
   private let secureInputMonitor = SecureInputMonitor()
   private var isSecureInputStuck = false
-  // セキュア入力を握っている原因アプリ名（特定できなければ nil）
-  private var secureInputCulpritAppName: String?
+  // セキュア入力を握っている原因プロセス（特定できなければ nil）
+  private var secureInputCulprit: SecureInputCulprit?
+  // 通知バナーの「原因アプリを終了して解除」ボタン用の識別子
+  private let secureInputCategoryID = "secure-input-stuck"
+  private let secureInputResolveActionID = "secure-input-resolve"
 
   // 生バイナリ実行（.appバンドル外。make run 等）では UNUserNotificationCenter が
   // bundleProxyForCurrentProcess is nil でクラッシュするため、通知機能は .app 実行時のみ有効化する。
@@ -58,39 +61,94 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   private func setupSecureInputMonitor() {
     // 通知許可をリクエスト（拒否されてもメニューバー警告は機能する）
     if canUseUserNotifications {
+      UNUserNotificationCenter.current().delegate = self
+      registerSecureInputNotificationCategory()
       UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
     } else {
       NSLog("[GridSwitch] .appバンドル外実行のため通知機能を無効化（メニューバー⚠️警告のみ動作）")
     }
 
-    secureInputMonitor.onStuckChanged = { [weak self] stuck, appName in
+    secureInputMonitor.onStuckChanged = { [weak self] stuck, culprit in
       self?.isSecureInputStuck = stuck
-      self?.secureInputCulpritAppName = appName
+      self?.secureInputCulprit = culprit
       self?.updateMenuBarIconForSecureInput(stuck)
       self?.rebuildMenu()
       if stuck {
-        self?.postSecureInputNotification(appName: appName)
+        self?.postSecureInputNotification(culprit: culprit)
       }
     }
     secureInputMonitor.start()
   }
 
+  // 通知バナーに「原因アプリを終了して解除」ボタンを持たせる。
+  // アクションのタイトルは事前登録が必要なため、言語変更時に登録し直す。
+  private func registerSecureInputNotificationCategory() {
+    guard canUseUserNotifications else { return }
+    let action = UNNotificationAction(
+      identifier: secureInputResolveActionID,
+      title: L10n.secureInputResolveAction,
+      options: [.foreground]
+    )
+    let category = UNNotificationCategory(
+      identifier: secureInputCategoryID,
+      actions: [action],
+      intentIdentifiers: [],
+      options: []
+    )
+    UNUserNotificationCenter.current().setNotificationCategories([category])
+  }
+
   // セキュア入力スタックを通知バナーで知らせる
-  private func postSecureInputNotification(appName: String?) {
+  private func postSecureInputNotification(culprit: SecureInputCulprit?) {
     guard canUseUserNotifications else { return }
     let content = UNMutableNotificationContent()
     content.title = L10n.secureInputTitle
-    content.body = L10n.secureInputMessage(appName: appName)
+    content.body = L10n.secureInputMessage(appName: culprit?.displayName)
+    // 終了させても支障が小さい既知のパスワードマネージャのときだけ解除ボタンを出す。
+    if let culprit = culprit, culprit.isKnownPasswordManager {
+      content.categoryIdentifier = secureInputCategoryID
+    }
     let request = UNNotificationRequest(
-      identifier: "secure-input-stuck",
+      identifier: secureInputCategoryID,
       content: content,
       trigger: nil
     )
     UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
   }
 
+  // 原因アプリを終了してセキュア入力を解除する。結果はアラートで知らせる。
+  private func resolveSecureInput(_ culprit: SecureInputCulprit) {
+    // 終了と解除待ちで数秒かかるため、UIを止めないようバックグラウンドで実行する。
+    DispatchQueue.global(qos: .userInitiated).async {
+      let terminated = SecureInputMonitor.terminate(culprit)
+      let released = terminated && SecureInputMonitor.waitUntilReleased(timeout: 6)
+      DispatchQueue.main.async { [weak self] in
+        guard let self = self else { return }
+        if released {
+          let alert = NSAlert()
+          alert.messageText = L10n.secureInputResolvedTitle
+          alert.informativeText = L10n.secureInputResolvedMessage(appName: culprit.displayName)
+          alert.alertStyle = .informational
+          alert.runModal()
+        } else {
+          self.showSecureInputNotResolvedAlert()
+        }
+      }
+    }
+  }
+
+  private func showSecureInputNotResolvedAlert() {
+    let alert = NSAlert()
+    alert.messageText = L10n.secureInputNotResolvedTitle
+    alert.informativeText = L10n.secureInputNotResolvedMessage
+    alert.alertStyle = .warning
+    alert.runModal()
+  }
+
   @objc private func settingsDidChange() {
     rebuildMenu()
+    // 言語が変わると通知ボタンの文言も変わるため登録し直す
+    registerSecureInputNotificationCategory()
   }
 
   private func setupMenuBarIcon() {
@@ -113,7 +171,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // セキュア入力スタック時は最上部に警告項目を出す
     if isSecureInputStuck {
       let warningItem = NSMenuItem(
-        title: L10n.secureInputMenuItem(appName: secureInputCulpritAppName),
+        title: L10n.secureInputMenuItem(appName: secureInputCulprit?.displayName),
         action: #selector(showSecureInputInfo),
         keyEquivalent: ""
       )
@@ -163,10 +221,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   @objc private func showSecureInputInfo() {
+    // 表示の直前に原因プロセスを取り直す（検知時から入れ替わっていることがある）
+    if let latest = SecureInputMonitor.currentCulprit() {
+      secureInputCulprit = latest
+    }
+    let culprit = secureInputCulprit
+
     let alert = NSAlert()
     alert.messageText = L10n.secureInputTitle
-    alert.informativeText = L10n.secureInputMessage(appName: secureInputCulpritAppName)
+    alert.informativeText = L10n.secureInputMessage(appName: culprit?.displayName)
     alert.alertStyle = .warning
+
+    // 終了させても支障が小さい既知のパスワードマネージャのときだけ解除ボタンを出す。
+    if let culprit = culprit, culprit.isKnownPasswordManager {
+      alert.addButton(withTitle: L10n.secureInputQuitButton(appName: culprit.displayName))
+      alert.addButton(withTitle: L10n.closeButton)
+      if alert.runModal() == .alertFirstButtonReturn {
+        resolveSecureInput(culprit)
+      }
+      return
+    }
     alert.runModal()
   }
 
@@ -180,5 +254,35 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   @objc private func quit() {
     NSApplication.shared.terminate(nil)
+  }
+}
+
+// MARK: - 通知バナーのボタン操作
+
+extension AppDelegate: UNUserNotificationCenterDelegate {
+  // GridSwitch がフォアグラウンドでも通知バナーを出す
+  func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    completionHandler([.banner, .sound])
+  }
+
+  // 「原因アプリを終了して解除」ボタンが押されたときの処理
+  func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    defer { completionHandler() }
+    guard response.actionIdentifier == secureInputResolveActionID else { return }
+    // ボタンを押した時点で保持元が入れ替わっていることがあるため取り直す
+    guard let culprit = SecureInputMonitor.currentCulprit() else {
+      showSecureInputNotResolvedAlert()
+      return
+    }
+    secureInputCulprit = culprit
+    resolveSecureInput(culprit)
   }
 }
