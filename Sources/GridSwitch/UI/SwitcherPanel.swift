@@ -29,6 +29,11 @@ class SwitcherPanel: NSPanel {
     hidesOnDeactivate = false
     collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
+    // システムの開閉アニメーション（中心へ縮めながらぼかす）を切る。
+    // これが途中で止まると、パネルが一回り小さいまま・中身がぼけたまま居座る。
+    // 表示・非表示は下の alphaValue のフェードで自前に行う。
+    animationBehavior = .none
+
     // 背景ぼかし効果（ベース）
     effectView.material = .hudWindow
     effectView.blendingMode = .behindWindow
