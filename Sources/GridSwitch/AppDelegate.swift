@@ -24,6 +24,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   func applicationDidFinishLaunching(_ notification: Notification) {
+    // ログインしても出てこない状態にならないようにする（点検: ~/bin/check-menubar-apps.py）
+    MenuBarBoot.handleLoginArguments()
+    MenuBarBoot.seedPosition()
+    MenuBarBoot.ensureRegistered()
     NSLog("[GridSwitch] applicationDidFinishLaunching")
     setupMenuBarIcon()
     NSLog("[GridSwitch] メニューバーアイコン設定完了")
@@ -153,6 +157,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   private func setupMenuBarIcon() {
     statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+    statusItem.autosaveName = MenuBarBoot.autosaveName
     updateMenuBarIconForSecureInput(false)
     rebuildMenu()
   }
