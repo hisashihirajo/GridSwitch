@@ -88,6 +88,15 @@ public class DockBadgeKit {
       else { continue }
 
       for item in itemsArray {
+        // Dockにはアプリ以外の項目も並ぶ。特にHandoff項目(AXHandoffDockItem)は
+        // AXStatusLabelにHandoff元デバイスのモデル識別子
+        // (例: "com.apple.macbookpro-16-2021")を入れてくるため、
+        // そのまま拾うとバッジとして表示されてしまう。アプリ項目だけを対象にする。
+        var subrole: AnyObject?
+        guard AXUIElementCopyAttributeValue(item, kAXSubroleAttribute as CFString, &subrole) == .success,
+              (subrole as? String) == "AXApplicationDockItem"
+        else { continue }
+
         var statusLabel: AnyObject?
         guard AXUIElementCopyAttributeValue(item, "AXStatusLabel" as CFString, &statusLabel) == .success,
               let badge = statusLabel as? String, !badge.isEmpty
