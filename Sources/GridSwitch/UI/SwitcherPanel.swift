@@ -17,6 +17,10 @@ class SwitcherPanel: NSPanel {
   // マウスの追従が遅れる。表示している間だけ優先度を上げてもらう。
   private var latencyActivity: NSObjectProtocol?
 
+  // 背景画像は Cmd+Tab のたびにファイルから読み直すと重い（数千px の JPEG だと毎回数十ms）。
+  // パネルを覆える大きさに縮小したものを覚えておく。
+  private let backgroundImageCache = BackgroundImageCache()
+
   init() {
     super.init(
       contentRect: NSRect(x: 0, y: 0, width: 400, height: 400),
@@ -256,7 +260,13 @@ class SwitcherPanel: NSPanel {
     let settings = Settings.shared
 
     // 背景画像（CALayerのcontentsで設定し、contentsGravityでAspect Fill）
-    let image = settings.backgroundImage
+    let scale = backingScaleFactor
+    backgroundImageView.layer?.contentsScale = scale
+    let image = backgroundImageCache.image(
+      path: settings.backgroundImagePath,
+      covering: backgroundImageView.bounds.size,
+      scale: scale
+    )
     backgroundImageView.layer?.contents = image
     backgroundImageView.isHidden = (image == nil)
     backgroundImageView.alphaValue = settings.backgroundImageOpacity
@@ -273,5 +283,51 @@ class SwitcherPanel: NSPanel {
     let x = screenFrame.midX - size.width / 2
     let y = screenFrame.midY - size.height / 2
     return NSRect(origin: NSPoint(x: x, y: y), size: size)
+  }
+}
+
+// パネル背景用に縮小した画像のキャッシュ。
+// ファイルの更新日時・パネルの大きさが変わったときだけ読み直す。
+final class BackgroundImageCache {
+  private var key: String?
+  private var image: CGImage?
+
+  func image(path: String, covering size: NSSize, scale: CGFloat) -> CGImage? {
+    guard !path.isEmpty, size.width > 0, size.height > 0 else { return nil }
+    let modified = (try? FileManager.default.attributesOfItem(atPath: path)[.modificationDate]) as? Date
+    let pixelW = Int((size.width * scale).rounded(.up))
+    let pixelH = Int((size.height * scale).rounded(.up))
+    let newKey = "\(path)|\(modified?.timeIntervalSince1970 ?? 0)|\(pixelW)x\(pixelH)"
+    if newKey == key {
+      return image
+    }
+    key = newKey
+    image = Self.load(path: path, pixelW: pixelW, pixelH: pixelH)
+    return image
+  }
+
+  // パネルを隙間なく覆える（Aspect Fill できる）最小の大きさで読み込む
+  private static func load(path: String, pixelW: Int, pixelH: Int) -> CGImage? {
+    let url = URL(fileURLWithPath: path) as CFURL
+    guard
+      let source = CGImageSourceCreateWithURL(url, nil),
+      let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+      var srcW = props[kCGImagePropertyPixelWidth] as? CGFloat,
+      var srcH = props[kCGImagePropertyPixelHeight] as? CGFloat,
+      srcW > 0, srcH > 0
+    else { return nil }
+    // 縦向きで撮った写真は幅と高さが入れ替わって表示される
+    if let orientation = props[kCGImagePropertyOrientation] as? Int, orientation >= 5 {
+      swap(&srcW, &srcH)
+    }
+    let ratio = min(1, max(CGFloat(pixelW) / srcW, CGFloat(pixelH) / srcH))
+    let maxPixel = Int((max(srcW, srcH) * ratio).rounded(.up))
+    let options: [CFString: Any] = [
+      kCGImageSourceCreateThumbnailFromImageAlways: true,
+      kCGImageSourceCreateThumbnailWithTransform: true,
+      kCGImageSourceShouldCacheImmediately: true,
+      kCGImageSourceThumbnailMaxPixelSize: maxPixel,
+    ]
+    return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
   }
 }
