@@ -125,10 +125,13 @@ class GridViewController: NSViewController {
     return nil
   }
 
+  // セルは作り直さず使い回す。AppKit のビューは生成のたびに内部でメモリが漏れるものがあり、
+  // Cmd+Tab ごとに全セルを作り直すと、長く使うほどメモリを食ってホバー追従が遅くなる。
   private func rebuildGrid() {
-    // 既存セルをクリア
-    cells.forEach { $0.removeFromSuperview() }
-    cells.removeAll()
+    // 余ったセルを外す
+    while cells.count > apps.count {
+      cells.removeLast().removeFromSuperview()
+    }
 
     guard !apps.isEmpty else { return }
 
@@ -137,31 +140,35 @@ class GridViewController: NSViewController {
     let cellH = SwitcherAppearance.cellHeight
     let spacing = SwitcherAppearance.interItemSpacing
     let inset = SwitcherAppearance.sectionInset
+    let totalRows = Int(ceil(Double(apps.count) / Double(columns)))
 
     for (index, app) in apps.enumerated() {
       let col = index % columns
       let row = index / columns
 
-      let totalRows = Int(ceil(Double(apps.count) / Double(columns)))
       // AppKitの座標系: 左下が原点なので、行を反転
       let flippedRow = totalRows - 1 - row
 
       let x = inset + CGFloat(col) * (cellW + spacing)
       let y = inset + CGFloat(flippedRow) * (cellH + spacing)
+      let frame = NSRect(x: x, y: y, width: cellW, height: cellH)
 
-      let cell = AppIconCell(
-        frame: NSRect(x: x, y: y, width: cellW, height: cellH)
-      )
+      let cell: AppIconCell
+      if index < cells.count {
+        cell = cells[index]
+        cell.frame = frame
+      } else {
+        cell = AppIconCell(frame: frame)
+        cell.onHover = { [weak self] in
+          self?.hoverSelect(index)
+        }
+        view.addSubview(cell)
+        cells.append(cell)
+      }
       // 0-9番目のアプリにショートカット番号バッジを表示（1,2,...,9,0）
       let shortcutNumber: Int? = Settings.shared.showNumberShortcuts && index < 10 ? (index + 1) % 10 : nil
       cell.configure(with: app, shortcutNumber: shortcutNumber)
       cell.isHighlighted = (index == selectedIndex)
-      cell.onHover = { [weak self] in
-        self?.hoverSelect(index)
-      }
-
-      view.addSubview(cell)
-      cells.append(cell)
     }
   }
 

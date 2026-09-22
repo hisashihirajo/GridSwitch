@@ -2,7 +2,11 @@ import AppKit
 
 // アプリアイコンセル
 class AppIconCell: NSView {
-  private let iconView = NSImageView()
+  // NSImageView は生成するたびに AppKit 内部でメモリが漏れる（1個あたり約2KB）。
+  // Cmd+Tab のたびに積み上がり、メモリが逼迫するとスワップに追い出されて
+  // ホバー追従が遅れる原因になるため、レイヤーに縮小済みの画像を直接載せる。
+  private let iconView = NSView()
+  private var icon: NSImage?
   private let nameLabel = NSTextField(labelWithString: "")
   private let highlightView = NSView()
   private let numberBadge = NSTextField(labelWithString: "")
@@ -37,7 +41,8 @@ class AppIconCell: NSView {
     addSubview(highlightView)
 
     // アイコン
-    iconView.imageScaling = .scaleProportionallyUpOrDown
+    iconView.wantsLayer = true
+    iconView.layer?.contentsGravity = .resizeAspect
     addSubview(iconView)
 
     // ラベル
@@ -107,6 +112,8 @@ class AppIconCell: NSView {
   override func viewDidMoveToWindow() {
     super.viewDidMoveToWindow()
     guard window != nil else { return }
+    // 画面の倍率（Retina かどうか）が確定したので描き直す
+    updateIconContents()
     // layerが確実に存在するタイミングでCALayer設定を適用
     layer?.masksToBounds = false
     highlightView.layer?.cornerRadius = SwitcherAppearance.highlightCornerRadius
@@ -116,7 +123,8 @@ class AppIconCell: NSView {
   }
 
   func configure(with appInfo: AppInfo, shortcutNumber: Int? = nil) {
-    iconView.image = appInfo.icon
+    icon = appInfo.icon
+    updateIconContents()
     nameLabel.stringValue = appInfo.name
     if let number = shortcutNumber {
       numberBadge.stringValue = "\(number)"
@@ -145,7 +153,11 @@ class AppIconCell: NSView {
     let iconSize = SwitcherAppearance.iconSize
     let iconX = (bounds.width - iconSize) / 2
     let iconY = bounds.height - iconSize - 8
-    iconView.frame = NSRect(x: iconX, y: iconY, width: iconSize, height: iconSize)
+    let iconFrame = NSRect(x: iconX, y: iconY, width: iconSize, height: iconSize)
+    if iconView.frame != iconFrame {
+      iconView.frame = iconFrame
+      updateIconContents()
+    }
 
     let labelHeight: CGFloat = 16
     let labelY = iconY - labelHeight - 2
@@ -177,6 +189,21 @@ class AppIconCell: NSView {
     highlightView.frame = bounds.insetBy(dx: 2, dy: 2)
   }
 
+  // アイコンを表示サイズぶんのビットマップにしてレイヤーへ載せる
+  private func updateIconContents() {
+    guard let icon else {
+      iconView.layer?.contents = nil
+      return
+    }
+    let scale = window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2
+    iconView.layer?.contentsScale = scale
+    iconView.layer?.contents = IconRasterCache.shared.image(
+      for: icon,
+      pointSize: SwitcherAppearance.iconSize,
+      scale: scale
+    )
+  }
+
   private func updateHighlight() {
     highlightView.isHidden = !isHighlighted
     if isHighlighted {
@@ -184,5 +211,63 @@ class AppIconCell: NSView {
       highlightView.layer?.borderColor = SwitcherAppearance.highlightBorderColor.cgColor
       highlightView.layer?.borderWidth = SwitcherAppearance.highlightBorderWidth
     }
+  }
+}
+
+// アイコンを表示サイズに縮小したビットマップのキャッシュ。
+// 元の NSImage は 1024px 級の表現を抱えているため、表示のたびに縮小し直さない。
+final class IconRasterCache {
+  static let shared = IconRasterCache()
+
+  // 元画像が解放されたら縮小版も一緒に消える
+  private let table = NSMapTable<NSImage, NSMutableDictionary>.weakToStrongObjects()
+
+  func image(for icon: NSImage, pointSize: CGFloat, scale: CGFloat) -> CGImage? {
+    let key = "\(pointSize)@\(scale)" as NSString
+    let sizes: NSMutableDictionary
+    if let existing = table.object(forKey: icon) {
+      sizes = existing
+    } else {
+      sizes = NSMutableDictionary()
+      table.setObject(sizes, forKey: icon)
+    }
+    if let cached = sizes[key] {
+      return (cached as! CGImage)
+    }
+    guard let rendered = Self.render(icon, pointSize: pointSize, scale: scale) else { return nil }
+    sizes[key] = rendered
+    return rendered
+  }
+
+  private static func render(_ icon: NSImage, pointSize: CGFloat, scale: CGFloat) -> CGImage? {
+    let pixels = max(1, Int((pointSize * scale).rounded()))
+    guard
+      let context = CGContext(
+        data: nil,
+        width: pixels,
+        height: pixels,
+        bitsPerComponent: 8,
+        bytesPerRow: 0,
+        space: CGColorSpace(name: CGColorSpace.sRGB)!,
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+      )
+    else { return nil }
+    context.interpolationQuality = .high
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+    // 正方形でない画像（開発中Electronアプリの PNG など）は縦横比を保って中央に置く
+    let side = CGFloat(pixels)
+    let ratio = icon.size.width > 0 && icon.size.height > 0
+      ? min(side / icon.size.width, side / icon.size.height) : 1
+    let drawW = icon.size.width > 0 ? icon.size.width * ratio : side
+    let drawH = icon.size.height > 0 ? icon.size.height * ratio : side
+    icon.draw(
+      in: NSRect(x: (side - drawW) / 2, y: (side - drawH) / 2, width: drawW, height: drawH),
+      from: .zero,
+      operation: .copy,
+      fraction: 1
+    )
+    NSGraphicsContext.restoreGraphicsState()
+    return context.makeImage()
   }
 }

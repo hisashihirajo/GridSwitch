@@ -12,6 +12,11 @@ class SwitcherPanel: NSPanel {
   // アプリに配送されない。グローバルモニタで拾ってホバー選択に反映する。
   private var mouseMoveMonitor: Any?
 
+  // 表示中は macOS に「操作に即応すべき処理中」と伝える。
+  // GridSwitch は常に裏で動くアプリなので、メモリや CPU が逼迫すると優先度を下げられ、
+  // マウスの追従が遅れる。表示している間だけ優先度を上げてもらう。
+  private var latencyActivity: NSObjectProtocol?
+
   init() {
     super.init(
       contentRect: NSRect(x: 0, y: 0, width: 400, height: 400),
@@ -65,6 +70,7 @@ class SwitcherPanel: NSPanel {
   func showWithApps(_ apps: [AppInfo]) {
     guard !apps.isEmpty else { return }
 
+    beginLatencyActivity()
     gridViewController.updateApps(apps)
 
     // パネルサイズを計算してリサイズ
@@ -94,6 +100,21 @@ class SwitcherPanel: NSPanel {
     }
 
     startMouseMoveMonitor()
+  }
+
+  private func beginLatencyActivity() {
+    guard latencyActivity == nil else { return }
+    latencyActivity = ProcessInfo.processInfo.beginActivity(
+      options: [.userInitiated, .latencyCritical],
+      reason: "Switcher panel is visible"
+    )
+  }
+
+  private func endLatencyActivity() {
+    if let activity = latencyActivity {
+      ProcessInfo.processInfo.endActivity(activity)
+      latencyActivity = nil
+    }
   }
 
   // マウス移動を監視してホバー選択に反映する
@@ -132,6 +153,7 @@ class SwitcherPanel: NSPanel {
 
   func dismiss() {
     stopMouseMoveMonitor()
+    endLatencyActivity()
     NSAnimationContext.runAnimationGroup(
       { context in
         context.duration = 0.1
