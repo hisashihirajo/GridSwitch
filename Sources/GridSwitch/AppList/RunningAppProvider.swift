@@ -5,8 +5,29 @@ class RunningAppProvider {
   private(set) var apps: [AppInfo] = []
   var onAppsChanged: (() -> Void)?
 
+  // pid ごとに覚えておくアプリ情報。info が nil なら通常のGUIアプリではない。
+  // NSWorkspace は問い合わせのたびに新しい NSRunningApplication を返し、
+  // activationPolicy とアイコンの取得がそのたびに macOS への問い合わせになる。
+  // 48個で数百ms かかり、メモリが逼迫するとさらに延びるため、Cmd+Tab のたびには問い合わせない。
+  private struct Entry {
+    let launchDate: Date?
+    let bundleIdentifier: String?
+    let info: AppInfo?
+
+    // 同じ pid でも別のアプリに使い回されていないか
+    func matches(_ app: NSRunningApplication) -> Bool {
+      return launchDate == app.launchDate && bundleIdentifier == app.bundleIdentifier
+    }
+  }
+
+  private var entries: [pid_t: Entry] = [:]
+  private let revalidateQueue = DispatchQueue(label: "jp.lifescape.gridswitch.app-list", qos: .utility)
+  // 確かめ直しは切り替えのたびに頼まれるので、走っている間の依頼は1回にまとめる
+  private var isRevalidating = false
+  private var needsRevalidate = false
+
   init() {
-    refreshApps()
+    apply(Self.scan(previous: [:]))
     setupObservers()
   }
 
@@ -14,11 +35,72 @@ class RunningAppProvider {
     NSWorkspace.shared.notificationCenter.removeObserver(self)
   }
 
-  // .regularポリシーのアプリのみ取得（通常のGUIアプリ）
+  // Cmd+Tab のたびに呼ぶ。macOS には問い合わせず（一覧を舐めるだけで数十ms かかる）、
+  // 覚えている一覧から終了済みのプロセスだけを外す。新しいアプリは起動通知から裏で拾う。
   func refreshApps() {
-    apps = NSWorkspace.shared.runningApplications
-      .filter { $0.activationPolicy == .regular }
-      .compactMap { AppInfo.from($0) }
+    let alive = entries.filter { pid, _ in
+      kill(pid, 0) == 0 || errno == EPERM
+    }
+    if alive.count != entries.count {
+      apply(alive)
+    }
+  }
+
+  // 全アプリを確かめ直す。覚えている pid はアイコン等を取り直さず、Dock に出るかだけ見直す。
+  private static func scan(previous: [pid_t: Entry]) -> [pid_t: Entry] {
+    var next: [pid_t: Entry] = [:]
+    for app in NSWorkspace.shared.runningApplications {
+      let pid = app.processIdentifier
+      let isRegular = app.activationPolicy == .regular
+      if let entry = previous[pid], entry.matches(app), (entry.info != nil) == isRegular {
+        next[pid] = entry
+      } else {
+        next[pid] = Entry(
+          launchDate: app.launchDate,
+          bundleIdentifier: app.bundleIdentifier,
+          info: isRegular ? AppInfo.from(app) : nil
+        )
+      }
+    }
+    return next
+  }
+
+  // 起動後に Dock へ出るようになるアプリもあるため、裏で全アプリを確かめ直す
+  func revalidateInBackground() {
+    guard !isRevalidating else {
+      needsRevalidate = true
+      return
+    }
+    isRevalidating = true
+    let snapshot = entries
+    revalidateQueue.async { [weak self] in
+      let next = Self.scan(previous: snapshot)
+      DispatchQueue.main.async {
+        guard let self else { return }
+        let before = self.apps
+        self.apply(next)
+        if self.apps.map(\.pid) != before.map(\.pid) {
+          self.onAppsChanged?()
+        }
+        self.isRevalidating = false
+        if self.needsRevalidate {
+          self.needsRevalidate = false
+          self.revalidateInBackground()
+        }
+      }
+    }
+  }
+
+  // 覚えているアプリ情報（アクティブ化のたびにアイコンを取り直さないため）
+  func cachedInfo(for app: NSRunningApplication) -> AppInfo? {
+    guard let entry = entries[app.processIdentifier], entry.matches(app) else { return nil }
+    return entry.info
+  }
+
+  private func apply(_ next: [pid_t: Entry]) {
+    entries = next
+    apps = next.values
+      .compactMap(\.info)
       .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
   }
 
@@ -89,29 +171,24 @@ class RunningAppProvider {
 
   private func setupObservers() {
     let nc = NSWorkspace.shared.notificationCenter
-
-    nc.addObserver(
-      self,
-      selector: #selector(appLaunched(_:)),
-      name: NSWorkspace.didLaunchApplicationNotification,
-      object: nil
-    )
-
-    nc.addObserver(
-      self,
-      selector: #selector(appTerminated(_:)),
-      name: NSWorkspace.didTerminateApplicationNotification,
-      object: nil
-    )
+    for name in [
+      NSWorkspace.didLaunchApplicationNotification,
+      NSWorkspace.didTerminateApplicationNotification,
+      NSWorkspace.didActivateApplicationNotification,
+    ] {
+      nc.addObserver(self, selector: #selector(appsMayHaveChanged(_:)), name: name, object: nil)
+    }
   }
 
-  @objc private func appLaunched(_ notification: Notification) {
-    refreshApps()
-    onAppsChanged?()
-  }
-
-  @objc private func appTerminated(_ notification: Notification) {
-    refreshApps()
-    onAppsChanged?()
+  @objc private func appsMayHaveChanged(_ notification: Notification) {
+    // 終了したアプリはその場で外す（裏での確かめ直しを待たない）
+    if notification.name == NSWorkspace.didTerminateApplicationNotification,
+      let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+    {
+      var next = entries
+      next.removeValue(forKey: app.processIdentifier)
+      apply(next)
+    }
+    revalidateInBackground()
   }
 }

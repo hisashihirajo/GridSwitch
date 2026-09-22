@@ -66,9 +66,7 @@ class AppSwitcherManager {
     }
 
     // アプリリスト変更の監視
-    appProvider.onAppsChanged = { [weak self] in
-      self?.appProvider.refreshApps()
-    }
+    // （一覧は RunningAppProvider が起動・終了・切り替えのたびに裏で更新する）
 
     // アプリのアクティベーション通知でMRUを常時追跡
     NSWorkspace.shared.notificationCenter.addObserver(
@@ -106,7 +104,8 @@ class AppSwitcherManager {
     else { return }
 
     // AppInfo.from()で解決済みの名前を使う（開発中Electronアプリ対応）
-    guard let appInfo = AppInfo.from(app) else { return }
+    // 覚えている情報があればそれを使い、切り替えのたびにアイコンを取り直さない
+    guard let appInfo = appProvider.cachedInfo(for: app) ?? AppInfo.from(app) else { return }
     Settings.shared.appMruOrder = Self.movedToFront(
       mruKey: appInfo.mruKey,
       in: Settings.shared.appMruOrder
