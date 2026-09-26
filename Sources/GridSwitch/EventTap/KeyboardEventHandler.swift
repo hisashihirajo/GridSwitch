@@ -28,6 +28,11 @@ class KeyboardEventHandler {
   var onNumberPressed: ((Int) -> Void)?      // 数字キー(0-9) → 直接アプリ選択
   var onQuitPressed: (() -> Void)?            // Q → 選択中のアプリを終了
   var onCtrlPressed: (() -> Void)?            // Ctrl → グリッド上で1つ前に移動
+  var onCmdReleasedWithoutKey: (() -> Void)?  // Cmdを押して離す間にキーが1つも届かなかった
+
+  // Cmd を押している間に keyDown が届いたか。セキュア入力中は keyDown だけが
+  // 届かなくなるため、Cmd+Tab が邪魔されたことの手がかりにする。
+  private var sawKeyDownWhileCmdHeld = false
 
   private let tabKeyCode: UInt16 = 48
   private let qKeyCode: UInt16 = 12
@@ -166,6 +171,7 @@ class KeyboardEventHandler {
     if cmdHeld && !isCmdHeld {
       // Cmdが押された
       isCmdHeld = true
+      sawKeyDownWhileCmdHeld = false
     } else if !cmdHeld && isCmdHeld {
       // スイッチャーアクティブ中は、Cmdキー自体のflagsChangedのみCmd解放と判定
       // （Ctrl等の他の修飾キー操作でCmdフラグが一時的に落ちるケースを無視する）
@@ -181,6 +187,11 @@ class KeyboardEventHandler {
         }
         return nil  // イベント消費
       }
+      if !sawKeyDownWhileCmdHeld {
+        DispatchQueue.main.async { [weak self] in
+          self?.onCmdReleasedWithoutKey?()
+        }
+      }
     }
 
     return event
@@ -189,6 +200,9 @@ class KeyboardEventHandler {
   // キー押下を処理
   private func handleKeyDown(_ event: CGEvent) -> CGEvent? {
     let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
+    if isCmdHeld {
+      sawKeyDownWhileCmdHeld = true
+    }
 
     // Escキー処理（スイッチャーがアクティブな場合）
     if keyCode == escKeyCode && isSwitcherActive {

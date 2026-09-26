@@ -82,6 +82,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       }
     }
     secureInputMonitor.start()
+
+    // Cmd+Tab が邪魔されたら、90秒待たずにその場で知らせる
+    KeyboardEventHandler.shared.onCmdReleasedWithoutKey = { [weak self] in
+      self?.secureInputMonitor.reportBlockedAttempt()
+    }
   }
 
   // 通知バナーに「原因アプリを終了して解除」ボタンを持たせる。

@@ -24,6 +24,7 @@ struct SecureInputCulprit {
 //
 // 通常のパスワード入力でも secure input は一瞬有効になるため、誤通知を避ける目的で
 // 一定時間(stuckThreshold)継続して有効な場合のみ「スタック」とみなして通知する。
+// ただし Cmd+Tab を押したのに届かなかったとき（reportBlockedAttempt）は待たずに通知する。
 //
 // 保持元プロセスを終了させれば、ログアウトやMac再起動をしなくても解除できる
 // （2026-09-08 に Bitwarden の Safari 拡張で実証）。
@@ -83,6 +84,19 @@ final class SecureInputMonitor {
         onStuckChanged?(false, nil)
       }
     }
+  }
+
+  // Cmd を押して離す間にキーが届かなかったときに呼ぶ（メインスレッド）。
+  // そのときセキュア入力が有効なら、しきい値を待たずにスタックとして通知する。
+  func reportBlockedAttempt() {
+    guard !isStuck, IsSecureEventInputEnabled() else { return }
+    isStuck = true
+    enabledSince = enabledSince ?? Date()
+    culprit = Self.currentCulprit()
+    NSLog(
+      "[GridSwitch] Cmd+Tabがセキュア入力で届きませんでした（原因: \(culprit?.displayName ?? "特定不可")）"
+    )
+    onStuckChanged?(true, culprit)
   }
 
   // MARK: - 解除
