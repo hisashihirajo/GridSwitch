@@ -17,3 +17,8 @@ web/.astro/
 
 # 署名・公証の平文資格情報（絶対にコミットしない）
 GridSwitch-release-credentials.txt
+
+# 会話の記録・引き継ぎメモ（このMacの中だけに置く。外へ出さない）
+.claude/auto-handoff/
+.claude/handoff/
+.claude/session-progress.md
