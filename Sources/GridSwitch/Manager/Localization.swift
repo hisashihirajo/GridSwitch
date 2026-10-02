@@ -91,13 +91,19 @@ enum L10n {
     current == .ja ? "Cmd+Tab が一時的に無効です" : "Cmd+Tab is temporarily disabled"
   }
 
+  // 通知バナーの見出し。バナーは本文が数行で切れるため、原因アプリ名は見出しに出す。
+  static func secureInputTitle(appName: String?) -> String {
+    guard let appName = appName else { return secureInputTitle }
+    return current == .ja ? "\(appName) が Cmd+Tab を止めています" : "\(appName) is blocking Cmd+Tab"
+  }
+
   // 原因プロセスを特定できた場合は、それを終了すれば直ることを案内する。
   // ログアウトやMac再起動は不要（保持元プロセスを終了させれば解除される）。
   static func secureInputMessage(appName: String?) -> String {
     if let appName = appName {
       return current == .ja
-        ? "macOSの「セキュアキー入力」が有効なため、Cmd+Tab スイッチャーが反応しません。\n\n原因のアプリ: \(appName)\n\n下のボタンでこのアプリを終了すると、その場で解除されます。Macの再起動もログアウトも必要ありません。終了したアプリは、次に必要になったときに自動で起動し直します。\n\nGridSwitch の不具合や権限の問題ではありません。"
-        : "macOS \"Secure Input\" is active, so the Cmd+Tab switcher won't respond.\n\nApp holding Secure Input: \(appName)\n\nQuitting that app with the button below releases it immediately. No logout or restart needed; the app relaunches on its own when it is next needed.\n\nThis is not a GridSwitch bug or a permissions issue."
+        ? "原因のアプリ: \(appName)\n\nmacOSの「セキュアキー入力」が有効なため、Cmd+Tab スイッチャーが反応しません。\n\n下のボタンでこのアプリを終了すると、その場で解除されます。Macの再起動もログアウトも必要ありません。終了したアプリは、次に必要になったときに自動で起動し直します。\n\nGridSwitch の不具合や権限の問題ではありません。"
+        : "App holding Secure Input: \(appName)\n\nmacOS \"Secure Input\" is active, so the Cmd+Tab switcher won't respond.\n\nQuitting that app with the button below releases it immediately. No logout or restart needed; the app relaunches on its own when it is next needed.\n\nThis is not a GridSwitch bug or a permissions issue."
     }
     return current == .ja
       ? "macOSの「セキュアキー入力」が有効なため、Cmd+Tab スイッチャーが反応しません。\n\nこれはパスワードマネージャ等の別アプリが原因で、GridSwitch の不具合や権限の問題ではありません。\n\n原因のアプリを特定できませんでした。パスワードマネージャ（Bitwarden・1Password 等）とそのブラウザ拡張を終了すると解除されます。それでも直らない場合はログアウトして再ログインしてください。"

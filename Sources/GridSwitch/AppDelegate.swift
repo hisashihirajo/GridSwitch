@@ -83,7 +83,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     secureInputMonitor.start()
 
-    // Cmd+Tab が邪魔されたら、90秒待たずにその場で知らせる
+    // Cmd+Tab が邪魔されたら、90秒待たずに10秒後に知らせる
     KeyboardEventHandler.shared.onCmdReleasedWithoutKey = { [weak self] in
       self?.secureInputMonitor.reportBlockedAttempt()
     }
@@ -111,7 +111,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   private func postSecureInputNotification(culprit: SecureInputCulprit?) {
     guard canUseUserNotifications else { return }
     let content = UNMutableNotificationContent()
-    content.title = L10n.secureInputTitle
+    content.title = L10n.secureInputTitle(appName: culprit?.displayName)
     content.body = L10n.secureInputMessage(appName: culprit?.displayName)
     // 終了させても支障が小さい既知のパスワードマネージャのときだけ解除ボタンを出す。
     if let culprit = culprit, culprit.isKnownPasswordManager {

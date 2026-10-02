@@ -24,7 +24,7 @@ struct SecureInputCulprit {
 //
 // 通常のパスワード入力でも secure input は一瞬有効になるため、誤通知を避ける目的で
 // 一定時間(stuckThreshold)継続して有効な場合のみ「スタック」とみなして通知する。
-// ただし Cmd+Tab を押したのに届かなかったとき（reportBlockedAttempt）は待たずに通知する。
+// ただし Cmd+Tab を押したのに届かなかったとき（reportBlockedAttempt）は、10秒後も有効なら通知する。
 //
 // 保持元プロセスを終了させれば、ログアウトやMac再起動をしなくても解除できる
 // （2026-09-08 に Bitwarden の Safari 拡張で実証）。
@@ -86,17 +86,28 @@ final class SecureInputMonitor {
     }
   }
 
+  // Cmd+Tab が届かなかったあと、通知するまで待つ秒数。
+  // パスワード入力中の一瞬のセキュア入力では通知せず、残り続けているときだけ知らせる。
+  private let blockedAttemptDelay: TimeInterval = 10
+  private var isBlockedAttemptPending = false
+
   // Cmd を押して離す間にキーが届かなかったときに呼ぶ（メインスレッド）。
-  // そのときセキュア入力が有効なら、しきい値を待たずにスタックとして通知する。
+  // そのときセキュア入力が有効で、10秒後もまだ有効なら、しきい値を待たずにスタックとして通知する。
   func reportBlockedAttempt() {
-    guard !isStuck, IsSecureEventInputEnabled() else { return }
-    isStuck = true
-    enabledSince = enabledSince ?? Date()
-    culprit = Self.currentCulprit()
-    NSLog(
-      "[GridSwitch] Cmd+Tabがセキュア入力で届きませんでした（原因: \(culprit?.displayName ?? "特定不可")）"
-    )
-    onStuckChanged?(true, culprit)
+    guard !isStuck, !isBlockedAttemptPending, IsSecureEventInputEnabled() else { return }
+    isBlockedAttemptPending = true
+    DispatchQueue.main.asyncAfter(deadline: .now() + blockedAttemptDelay) { [weak self] in
+      guard let self else { return }
+      self.isBlockedAttemptPending = false
+      guard !self.isStuck, IsSecureEventInputEnabled() else { return }
+      self.isStuck = true
+      self.enabledSince = self.enabledSince ?? Date()
+      self.culprit = Self.currentCulprit()
+      NSLog(
+        "[GridSwitch] Cmd+Tabがセキュア入力で届きませんでした（原因: \(self.culprit?.displayName ?? "特定不可")）"
+      )
+      self.onStuckChanged?(true, self.culprit)
+    }
   }
 
   // MARK: - 解除
@@ -151,10 +162,40 @@ final class SecureInputMonitor {
   // そのため、PID が生きているときだけ採用し、駄目なら既知のパスワードマネージャを
   // 実行中プロセスから探す。
   static func currentCulprit() -> SecureInputCulprit? {
+    // パスワード欄にカーソルが残っているアプリが最も確実な手がかり。
+    // IORegistry の PID は最後に有効化したプロセスでしかなく、背後で握り続けている
+    // アプリとは限らない（2026-10-02、裏に回った Meta Business のパスワード欄が原因
+    // だったのに、IORegistry は終了済みの Ultenix を指していた）。
+    if let pid = appWithFocusedPasswordField(), let path = executablePath(forPID: pid) {
+      return makeCulprit(pid: pid, path: path)
+    }
     if let pid = secureInputPIDFromRegistry(), let path = executablePath(forPID: pid) {
       return makeCulprit(pid: pid, path: path)
     }
     return findRunningPasswordManager()
+  }
+
+  // 実行中のアプリのうち、パスワード欄（AXSecureTextField）にカーソルがあるものの PID を返す。
+  // アクセシビリティ経由で読むだけなので、フォーカスは動かさない。
+  private static func appWithFocusedPasswordField() -> pid_t? {
+    let ownPID = ProcessInfo.processInfo.processIdentifier
+    for app in NSWorkspace.shared.runningApplications where app.processIdentifier != ownPID {
+      let element = AXUIElementCreateApplication(app.processIdentifier)
+      AXUIElementSetMessagingTimeout(element, 0.3)
+      var focused: CFTypeRef?
+      guard
+        AXUIElementCopyAttributeValue(element, kAXFocusedUIElementAttribute as CFString, &focused)
+          == .success,
+        let focused, CFGetTypeID(focused) == AXUIElementGetTypeID()
+      else { continue }
+      var subrole: CFTypeRef?
+      AXUIElementCopyAttributeValue(
+        focused as! AXUIElement, kAXSubroleAttribute as CFString, &subrole)
+      if (subrole as? String) == (kAXSecureTextFieldSubrole as String) {
+        return app.processIdentifier
+      }
+    }
+    return nil
   }
 
   // IORegistry の IOResources ノードが持つ IOConsoleUsers 配列から、
